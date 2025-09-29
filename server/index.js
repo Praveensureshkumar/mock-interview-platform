@@ -3,14 +3,23 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+// Import routes
+const authRoutes = require('./routes/auth');
+const interviewRoutes = require('./routes/interview');
+
 const app = express();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// test route
+// Routes
 app.get('/', (req, res) => {
-  res.send('Server running');
+  res.send('AI Mock Interview Platform API');
 });
+
+app.use('/api/auth', authRoutes);
+app.use('/api/interview', interviewRoutes);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)

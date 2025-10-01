@@ -41,6 +41,7 @@ const ProfilePage = () => {
       return;
     }
     loadInterviewHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, navigate]);
 
   const loadInterviewHistory = async () => {

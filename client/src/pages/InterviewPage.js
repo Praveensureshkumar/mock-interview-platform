@@ -27,6 +27,7 @@ const InterviewPage = () => {
 
   useEffect(() => {
     loadQuestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testType, difficulty]);
 
   useEffect(() => {
@@ -166,7 +167,16 @@ const InterviewPage = () => {
   };
 
   const handleVoiceTranscript = (transcript) => {
-    setCurrentAnswer(prev => prev + ' ' + transcript);
+    // Clean up the transcript and add it to current answer
+    const cleanedTranscript = transcript.trim();
+    if (cleanedTranscript) {
+      setCurrentAnswer(prev => {
+        // If previous answer is empty, just set the new transcript
+        // Otherwise, add a space and then the new transcript
+        const newAnswer = prev.trim() ? `${prev} ${cleanedTranscript}` : cleanedTranscript;
+        return newAnswer;
+      });
+    }
   };
 
   const handleRetakeInterview = () => {
@@ -275,7 +285,12 @@ const InterviewPage = () => {
           {!isCompleted && (
             <div className="border-t p-4">
               {mode === 'voice' && (
-                <div className="mb-4">
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="bg-blue-100 px-3 py-1 rounded-full">
+                      <span className="text-sm font-medium text-blue-800">Voice Mode Active</span>
+                    </div>
+                  </div>
                   <VoiceInput 
                     onTranscript={handleVoiceTranscript}
                     disabled={isCompleted}
@@ -287,9 +302,11 @@ const InterviewPage = () => {
                 <textarea
                   value={currentAnswer}
                   onChange={(e) => setCurrentAnswer(e.target.value)}
-                  placeholder="Type your answer here..."
-                  className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  rows="3"
+                  placeholder={mode === 'voice' ? 'Your voice input will appear here, or type manually...' : 'Type your answer here...'}
+                  className={`flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
+                    mode === 'voice' ? 'bg-gray-50 border-gray-200' : 'border-gray-300'
+                  }`}
+                  rows="4"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -300,14 +317,24 @@ const InterviewPage = () => {
                 <button
                   onClick={handleSubmitAnswer}
                   disabled={!currentAnswer.trim()}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
+                  title="Submit Answer"
                 >
                   <FiSend className="h-5 w-5" />
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Press Enter to submit, Shift+Enter for new line
-              </p>
+              
+              <div className="mt-2 flex justify-between items-center">
+                <p className="text-xs text-gray-500">
+                  {mode === 'voice' 
+                    ? 'Use voice input above or type manually. Press Enter to submit, Shift+Enter for new line' 
+                    : 'Press Enter to submit, Shift+Enter for new line'
+                  }
+                </p>
+                <div className="text-xs text-gray-400">
+                  {currentAnswer.length} characters
+                </div>
+              </div>
             </div>
           )}
         </div>

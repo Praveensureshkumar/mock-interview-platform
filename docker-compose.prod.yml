@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: mock-interview-db-prod
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - interview-network
+
+  # Backend Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: mock-interview-backend-prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@mongodb:27017/mockInterview?authSource=admin
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+    networks:
+      - interview-network
+
+  # Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: mock-interview-frontend-prod
+    restart: always
+    ports:
+      - "80:3000"
+    depends_on:
+      - backend
+    networks:
+      - interview-network
+    environment:
+      - REACT_APP_API_URL=${API_URL}
+
+volumes:
+  mongodb_data:
+
+networks:
+  interview-network:
+    driver: bridge

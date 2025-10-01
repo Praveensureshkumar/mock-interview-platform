@@ -6,6 +6,7 @@ require('dotenv').config();
 // Import routes
 const authRoutes = require('./routes/auth');
 const interviewRoutes = require('./routes/interview');
+// const adminRoutes = require('./routes/admin');
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/interview', interviewRoutes);
+// app.use('/api/admin', adminRoutes);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)

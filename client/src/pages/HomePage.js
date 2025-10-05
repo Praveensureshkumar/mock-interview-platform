@@ -49,14 +49,14 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
             AI-Powered Mock Interview Platform
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
             Practice your interview skills with AI-generated questions. 
             Get instant feedback and track your progress over time.
           </p>
@@ -64,7 +64,7 @@ const HomePage = () => {
 
         {/* Test Type Selection */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 text-center">
             Choose Your Interview Type
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -75,18 +75,18 @@ const HomePage = () => {
                   key={test.id}
                   className={`relative p-6 rounded-lg cursor-pointer transition-all duration-200 ${
                     selectedTest === test.id
-                      ? 'ring-4 ring-blue-500 bg-white shadow-lg'
-                      : 'bg-white hover:shadow-md border border-gray-200'
+                      ? 'ring-4 ring-blue-500 bg-white dark:bg-gray-800 shadow-lg'
+                      : 'bg-white dark:bg-gray-800 hover:shadow-md border border-gray-200 dark:border-gray-700'
                   }`}
                   onClick={() => setSelectedTest(test.id)}
                 >
                   <div className={`inline-flex p-3 rounded-lg ${test.color} text-white mb-4`}>
                     <IconComponent className="h-6 w-6" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                     {test.name}
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     {test.description}
                   </p>
                   {selectedTest === test.id && (
@@ -105,18 +105,18 @@ const HomePage = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Interview Settings</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8 transition-colors duration-200">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Interview Settings</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Difficulty Level */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Difficulty Level
               </label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
@@ -126,13 +126,13 @@ const HomePage = () => {
 
             {/* Interview Mode */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Interview Mode
               </label>
               <select
                 value={mode}
                 onChange={(e) => setMode(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="typed">Typed Only</option>
                 <option value="voice">Voice Input</option>
@@ -148,8 +148,8 @@ const HomePage = () => {
             disabled={!selectedTest}
             className={`px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200 ${
               selectedTest
-                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-lg hover:shadow-xl'
+                : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
             }`}
           >
             Start Mock Interview
@@ -158,7 +158,7 @@ const HomePage = () => {
 
         {/* Additional Info */}
         <div className="mt-12 text-center">
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             💡 <strong>Tip:</strong> Login to save your interview results and track your progress over time.
             You can also take interviews as a guest, but results won't be saved.
           </p>

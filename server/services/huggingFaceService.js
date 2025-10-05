@@ -1,8 +1,11 @@
 const axios = require('axios');
 require('dotenv').config();
 
+console.log('🔄 Loading HuggingFaceService...');
+
 class HuggingFaceService {
     constructor() {
+        console.log('🎯 HuggingFaceService constructor called');
         this.apiToken = process.env.HUGGINGFACE_API_TOKEN;
         this.apiUrl = process.env.HUGGINGFACE_API_URL;
         
@@ -12,44 +15,85 @@ class HuggingFaceService {
             textGeneration: 'microsoft/DialoGPT-large',
             sentimentAnalysis: 'cardiffnlp/twitter-roberta-base-sentiment-latest'
         };
+        
+        console.log('✅ HuggingFaceService initialized');
     }
 
     // Generate interview questions using AI
     async generateQuestions(testType, difficulty, count = 2) {
+        console.log(`🤖 Generating questions for ${testType} - ${difficulty} (count: ${count})`);
+        
+        // TEMPORARY: Skip AI generation and use fallback questions
+        // This ensures the interview works while we fix the Hugging Face API issues
+        console.log('⚠️ Using fallback questions (AI API temporarily disabled)');
+        return this.getFallbackQuestions(testType, difficulty, count);
+        
+        /* ORIGINAL AI CODE - COMMENTED OUT UNTIL API IS FIXED
         try {
             const prompts = this.createPrompts(testType, difficulty, count);
             const questions = [];
 
-            for (const prompt of prompts) {
-                const response = await this.callHuggingFaceAPI(
-                    this.models.textGeneration,
-                    { inputs: prompt }
-                );
+            for (let i = 0; i < prompts.length; i++) {
+                const prompt = prompts[i];
                 
-                if (response && response.generated_text) {
-                    const question = this.extractQuestion(response.generated_text, prompt);
-                    if (question) {
-                        questions.push({
-                            question: question,
-                            testType: testType,
-                            difficulty: difficulty,
-                            aiGenerated: true,
-                            category: `AI Generated ${testType.charAt(0).toUpperCase() + testType.slice(1)}`
-                        });
+                // Add timestamp and randomness to make each call unique
+                const uniquePrompt = `${prompt} [${Date.now()}-${Math.floor(Math.random() * 1000)}]`;
+                
+                try {
+                    const response = await this.callHuggingFaceAPI(
+                        this.models.textGeneration,
+                        { 
+                            inputs: uniquePrompt,
+                            parameters: {
+                                max_length: 150 + Math.floor(Math.random() * 50),
+                                temperature: 0.7 + (Math.random() * 0.3),
+                                top_p: 0.9 + (Math.random() * 0.1),
+                                do_sample: true,
+                                repetition_penalty: 1.1
+                            }
+                        }
+                    );
+                    
+                    if (response && response.generated_text) {
+                        const question = this.extractQuestion(response.generated_text, uniquePrompt);
+                        if (question) {
+                            questions.push({
+                                question: question,
+                                testType: testType,
+                                difficulty: difficulty,
+                                aiGenerated: true,
+                                category: `AI Generated ${testType.charAt(0).toUpperCase() + testType.slice(1)}`,
+                                timestamp: Date.now(),
+                                uniqueId: `${testType}_${difficulty}_${Date.now()}_${i}`
+                            });
+                        }
                     }
+                } catch (apiError) {
+                    console.warn(`⚠️ AI API failed for prompt ${i + 1}:`, apiError.message);
+                    // Continue to next prompt instead of failing completely
+                }
+                
+                // Small delay between API calls to increase variability
+                if (i < prompts.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
                 }
             }
 
-            // Fallback questions if AI generation fails
-            if (questions.length === 0) {
-                return this.getFallbackQuestions(testType, difficulty, count);
+            // If we got any AI questions, return them
+            if (questions.length > 0) {
+                console.log(`✅ Generated ${questions.length} AI questions successfully`);
+                return questions;
             }
 
-            return questions;
+            // If AI generation completely failed, fall back to predefined questions
+            console.log('⚠️ AI generation failed, using fallback questions');
+            return this.getFallbackQuestions(testType, difficulty, count);
+
         } catch (error) {
-            console.error('Error generating questions:', error);
+            console.error('❌ Error in generateQuestions:', error.message);
             return this.getFallbackQuestions(testType, difficulty, count);
         }
+        */
     }
 
     // Create prompts for different test types and difficulties
@@ -334,6 +378,7 @@ class HuggingFaceService {
     // Generic API call to Hugging Face
     async callHuggingFaceAPI(model, data) {
         try {
+            console.log(`🔗 Calling Hugging Face API for model: ${model}`);
             const response = await axios.post(
                 `${this.apiUrl}/${model}`,
                 data,
@@ -342,14 +387,20 @@ class HuggingFaceService {
                         'Authorization': `Bearer ${this.apiToken}`,
                         'Content-Type': 'application/json'
                     },
-                    timeout: 10000 // 10 second timeout
+                    timeout: 15000 // Increased timeout to 15 seconds
                 }
             );
 
+            console.log('✅ Hugging Face API call successful');
             return response.data;
         } catch (error) {
-            console.error(`Error calling Hugging Face API for model ${model}:`, error.message);
-            throw error;
+            console.error(`❌ Error calling Hugging Face API for model ${model}:`);
+            console.error('Status:', error.response?.status);
+            console.error('Message:', error.message);
+            console.error('Response:', error.response?.data);
+            
+            // Throw a more descriptive error
+            throw new Error(`Hugging Face API Error: ${error.response?.status || 'Unknown'} - ${error.message}`);
         }
     }
 }

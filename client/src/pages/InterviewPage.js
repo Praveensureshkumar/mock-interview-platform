@@ -210,22 +210,16 @@ const InterviewPage = () => {
     // Clean up the transcript and add it to current answer
     const cleanedTranscript = transcript.trim();
     if (cleanedTranscript) {
+      console.log('🎤 Voice transcript received:', cleanedTranscript);
       setCurrentAnswer(prev => {
+        const prevTrimmed = prev.trim();
         // If previous answer is empty, just set the new transcript
         // Otherwise, add a space and then the new transcript
-        const newAnswer = prev.trim() ? `${prev} ${cleanedTranscript}` : cleanedTranscript;
+        const newAnswer = prevTrimmed ? `${prevTrimmed} ${cleanedTranscript}` : cleanedTranscript;
+        console.log('📝 Updated answer:', newAnswer);
         return newAnswer;
       });
     }
-  };
-
-  const handleRetakeInterview = () => {
-    setAnswers([]);
-    setCurrentQuestionIndex(0);
-    setCurrentAnswer('');
-    setIsCompleted(false);
-    setShowResults(false);
-    setResults(null);
   };
 
   if (loading) {

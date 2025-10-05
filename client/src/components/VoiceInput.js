@@ -9,6 +9,7 @@ const VoiceInput = ({ onTranscript, disabled }) => {
   const [retryCount, setRetryCount] = useState(0);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const recognitionRef = useRef(null);
+  const transcriptTimeoutRef = useRef(null);
   const maxRetries = 3;
 
   // Memoize the onTranscript callback to prevent unnecessary re-renders
@@ -24,11 +25,21 @@ const VoiceInput = ({ onTranscript, disabled }) => {
       return;
     }
 
+    // Clean up any existing recognition instance
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      } catch (e) {
+        console.log('Error cleaning up existing recognition:', e);
+      }
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognitionInstance = new SpeechRecognition();
     
     // Configure speech recognition
-    recognitionInstance.continuous = true; // Changed to true for better capture
+    recognitionInstance.continuous = false; // Changed back to false for better control
     recognitionInstance.interimResults = true;
     recognitionInstance.lang = 'en-US';
     recognitionInstance.maxAlternatives = 1;
@@ -43,8 +54,24 @@ const VoiceInput = ({ onTranscript, disabled }) => {
 
     recognitionInstance.onend = () => {
       console.log('🛑 Speech recognition ended');
-      setIsListening(false);
-      setInterimTranscript('');
+      
+      // If we were listening and it ended naturally (not manually stopped), restart it
+      if (isListening && !networkError && !isOffline && navigator.onLine) {
+        console.log('🔄 Restarting speech recognition for continuous listening...');
+        setTimeout(() => {
+          try {
+            if (recognitionRef.current && isListening) {
+              recognitionRef.current.start();
+            }
+          } catch (e) {
+            console.error('Error restarting recognition:', e);
+            setIsListening(false);
+          }
+        }, 100); // Small delay to prevent immediate restart issues
+      } else {
+        setIsListening(false);
+        setInterimTranscript('');
+      }
     };
 
     recognitionInstance.onresult = (event) => {
@@ -64,7 +91,15 @@ const VoiceInput = ({ onTranscript, disabled }) => {
       
       if (finalTranscript.trim()) {
         console.log('📝 Final transcript:', finalTranscript);
-        handleTranscript(finalTranscript);
+        
+        // Debounce final transcript to prevent rapid-fire updates
+        if (transcriptTimeoutRef.current) {
+          clearTimeout(transcriptTimeoutRef.current);
+        }
+        
+        transcriptTimeoutRef.current = setTimeout(() => {
+          handleTranscript(finalTranscript);
+        }, 500); // Wait 500ms before sending transcript
       }
     };
 
@@ -90,19 +125,31 @@ const VoiceInput = ({ onTranscript, disabled }) => {
           console.log('Network error - speech recognition service unavailable');
           setNetworkError(true);
           
-          if (retryCount < maxRetries) {
+          // Only retry if the user was actively trying to use voice recognition
+          if (retryCount < maxRetries && isListening) {
             console.log(`Retrying... (${retryCount + 1}/${maxRetries})`);
             setTimeout(() => {
-              setRetryCount(prev => prev + 1);
-              try {
-                recognitionInstance.start();
-              } catch (e) {
-                console.error('Retry failed:', e);
+              // Check if we should still retry (user might have stopped manually)
+              if (isListening && !isOffline && navigator.onLine) {
+                setRetryCount(prev => prev + 1);
+                try {
+                  recognitionInstance.start();
+                } catch (e) {
+                  console.error('Retry failed:', e);
+                  setIsListening(false);
+                  setNetworkError(false);
+                }
               }
             }, 2000); // Wait 2 seconds before retry
           } else {
-            alert('❌ Network connection issues detected. Please check your internet connection and try again later.');
-            setRetryCount(0); // Reset retry count
+            // Reset states if max retries reached or not listening
+            setNetworkError(false);
+            setIsListening(false);
+            setRetryCount(0);
+            
+            if (retryCount >= maxRetries) {
+              alert('❌ Network connection issues detected. Please check your internet connection and try again later.');
+            }
           }
           break;
         case 'service-not-allowed':
@@ -132,15 +179,33 @@ const VoiceInput = ({ onTranscript, disabled }) => {
     return () => {
       if (recognitionRef.current) {
         try {
-          recognitionRef.current.stop();
+          // Remove event listeners to prevent memory leaks
+          recognitionRef.current.onstart = null;
+          recognitionRef.current.onend = null;
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current.onnomatch = null;
+          
+          // Stop recognition if it's running
+          if (recognitionRef.current.stop) {
+            recognitionRef.current.stop();
+          }
+          
+          recognitionRef.current = null;
         } catch (e) {
-          console.log('Error stopping recognition:', e);
+          console.log('Error cleaning up recognition:', e);
         }
+      }
+      
+      // Clear any pending transcript timeouts
+      if (transcriptTimeoutRef.current) {
+        clearTimeout(transcriptTimeoutRef.current);
       }
     };
   }, [handleTranscript]);
 
   // Handle online/offline status
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
@@ -164,7 +229,7 @@ const VoiceInput = ({ onTranscript, disabled }) => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [isListening, recognition]);
+  }, []);  // Intentionally minimal dependencies
 
   const toggleListening = async () => {
     if (!recognition) {
@@ -177,11 +242,25 @@ const VoiceInput = ({ onTranscript, disabled }) => {
     try {
       if (isListening) {
         console.log('🛑 Stopping speech recognition...');
-        recognition.stop();
+        // Reset states immediately to prevent multiple stops
+        setIsListening(false);
+        setInterimTranscript('');
+        setNetworkError(false);
+        setRetryCount(0);
+        
+        if (recognition && recognition.stop) {
+          recognition.stop();
+        }
       } else {
         // Check network connectivity before starting
         if (!navigator.onLine || isOffline) {
           alert('❌ You appear to be offline. Speech recognition requires an internet connection.');
+          return;
+        }
+
+        // Prevent multiple simultaneous starts
+        if (recognition.started) {
+          console.log('🚫 Recognition already started, ignoring request');
           return;
         }
 
@@ -191,6 +270,11 @@ const VoiceInput = ({ onTranscript, disabled }) => {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           // Stop the stream immediately as we only needed permission
           stream.getTracks().forEach(track => track.stop());
+          
+          // Reset states before starting
+          setNetworkError(false);
+          setRetryCount(0);
+          setInterimTranscript('');
           
           // Start recognition
           recognition.start();
@@ -208,6 +292,8 @@ const VoiceInput = ({ onTranscript, disabled }) => {
     } catch (error) {
       console.error('❌ Speech recognition toggle error:', error);
       setIsListening(false);
+      setInterimTranscript('');
+      setNetworkError(false);
       alert('❌ Error starting speech recognition. Please try again.');
     }
   };

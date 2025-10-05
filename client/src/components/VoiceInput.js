@@ -18,6 +18,7 @@ const VoiceInput = ({ onTranscript, disabled }) => {
     }
   }, [onTranscript]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Check for speech recognition support
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {

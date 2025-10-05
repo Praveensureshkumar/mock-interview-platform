@@ -6,9 +6,9 @@
 - **`main`** - Production-ready code (stable releases)
 - **`development`** - Development branch (active development)
 
-## ⚙️ Local Development (No Docker)
+## ⚙️ Local Development
 
-This project can be run locally without Docker. Follow the steps below to set up and run both backend and frontend on your machine.
+This project can be run locally. Follow the steps below to set up and run both backend and frontend on your machine.
 
 ### Development Environment
 ```powershell

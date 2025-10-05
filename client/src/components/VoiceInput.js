@@ -24,27 +24,28 @@ const VoiceInput = ({ onTranscript, disabled }) => {
     const recognitionInstance = new SpeechRecognition();
     
     // Configure speech recognition
-    recognitionInstance.continuous = false; // Changed to false for better control
+    recognitionInstance.continuous = true; // Changed to true for better capture
     recognitionInstance.interimResults = true;
     recognitionInstance.lang = 'en-US';
     recognitionInstance.maxAlternatives = 1;
 
     recognitionInstance.onstart = () => {
-      console.log('Speech recognition started');
+      console.log('🎤 Speech recognition started');
       setIsListening(true);
       setInterimTranscript('');
     };
 
     recognitionInstance.onend = () => {
-      console.log('Speech recognition ended');
+      console.log('🛑 Speech recognition ended');
       setIsListening(false);
+      setInterimTranscript('');
     };
 
     recognitionInstance.onresult = (event) => {
       let finalTranscript = '';
       let interimText = '';
       
-      for (let i = 0; i < event.results.length; i++) {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
@@ -55,34 +56,41 @@ const VoiceInput = ({ onTranscript, disabled }) => {
       
       setInterimTranscript(interimText);
       
-      if (finalTranscript) {
-        console.log('Final transcript:', finalTranscript);
+      if (finalTranscript.trim()) {
+        console.log('📝 Final transcript:', finalTranscript);
         handleTranscript(finalTranscript);
-        setInterimTranscript('');
       }
     };
 
     recognitionInstance.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
+      console.error('🚨 Speech recognition error:', event.error);
       setIsListening(false);
       setInterimTranscript('');
       
-      // Handle different error types
+      // Handle different error types with more user-friendly messages
       switch (event.error) {
         case 'no-speech':
-          alert('No speech detected. Please try again.');
+          // Don't show alert for no-speech, just log it
+          console.log('No speech detected, waiting for input...');
           break;
         case 'audio-capture':
-          alert('No microphone found. Please check your microphone.');
+          alert('❌ No microphone found. Please check your microphone connection and try again.');
           break;
         case 'not-allowed':
-          alert('Microphone access denied. Please allow microphone access and try again.');
+          alert('❌ Microphone access denied. Please allow microphone access in your browser settings and refresh the page.');
           break;
         case 'network':
-          alert('Network error. Please check your internet connection.');
+          alert('❌ Network error occurred. Please check your internet connection and try again.');
+          break;
+        case 'service-not-allowed':
+          alert('❌ Speech recognition service not allowed. Please check your browser settings.');
+          break;
+        case 'aborted':
+          console.log('Speech recognition was aborted');
           break;
         default:
-          alert(`Speech recognition error: ${event.error}`);
+          console.error(`Speech recognition error: ${event.error}`);
+          alert(`❌ Speech recognition error: ${event.error}. Please try again.`);
       }
     };
 
@@ -108,7 +116,7 @@ const VoiceInput = ({ onTranscript, disabled }) => {
 
   const toggleListening = async () => {
     if (!recognition) {
-      alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+      alert('❌ Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
       return;
     }
 
@@ -116,43 +124,56 @@ const VoiceInput = ({ onTranscript, disabled }) => {
 
     try {
       if (isListening) {
+        console.log('🛑 Stopping speech recognition...');
         recognition.stop();
       } else {
-        // Request microphone permission
+        console.log('🎤 Starting speech recognition...');
+        // Request microphone permission first
         try {
-          await navigator.mediaDevices.getUserMedia({ audio: true });
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          // Stop the stream immediately as we only needed permission
+          stream.getTracks().forEach(track => track.stop());
+          
+          // Start recognition
           recognition.start();
         } catch (error) {
-          console.error('Microphone permission error:', error);
-          alert('Please allow microphone access to use voice input.');
+          console.error('❌ Microphone permission error:', error);
+          if (error.name === 'NotAllowedError') {
+            alert('❌ Microphone access denied. Please allow microphone access and try again.');
+          } else if (error.name === 'NotFoundError') {
+            alert('❌ No microphone found. Please connect a microphone and try again.');
+          } else {
+            alert('❌ Error accessing microphone. Please check your microphone settings.');
+          }
         }
       }
     } catch (error) {
-      console.error('Speech recognition toggle error:', error);
+      console.error('❌ Speech recognition toggle error:', error);
       setIsListening(false);
+      alert('❌ Error starting speech recognition. Please try again.');
     }
   };
 
   // Check if speech recognition is supported
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     return (
-      <div className="text-center p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-yellow-800">
-          Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari for voice input.
+      <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <p className="text-yellow-800 dark:text-yellow-200">
+          🚫 Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari for voice input.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center space-y-3">
+    <div className="flex flex-col items-center space-y-4">
       <button
         onClick={toggleListening}
         disabled={disabled}
-        className={`p-4 rounded-full transition-all duration-200 ${
+        className={`relative p-4 rounded-full transition-all duration-300 transform hover:scale-105 ${
           isListening
-            ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-lg'
-            : 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'
+            ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-lg ring-4 ring-red-200 dark:ring-red-800'
+            : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         title={isListening ? 'Click to stop recording' : 'Click to start recording'}
       >
@@ -161,25 +182,32 @@ const VoiceInput = ({ onTranscript, disabled }) => {
         ) : (
           <FiMic className="h-6 w-6" />
         )}
+        
+        {/* Recording indicator */}
+        {isListening && (
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-300 rounded-full animate-ping"></div>
+        )}
       </button>
       
       <div className="text-center">
-        <p className="text-sm font-medium text-gray-700">
-          {isListening ? '🎙️ Listening...' : '🎤 Click to start speaking'}
+        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {isListening ? '🎙️ Listening... Click to stop' : '🎤 Click to start speaking'}
         </p>
         {interimTranscript && (
-          <p className="text-xs text-gray-500 mt-1 italic">
-            "{interimTranscript}"
-          </p>
+          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+            <p className="text-xs text-blue-700 dark:text-blue-300 italic">
+              "&gt;{interimTranscript}"
+            </p>
+          </div>
         )}
       </div>
       
       {/* Instructions */}
-      <div className="text-xs text-gray-500 text-center max-w-xs">
+      <div className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-xs">
         {isListening ? (
-          <span>Speak clearly and click stop when finished</span>
+          <span className="text-red-600 dark:text-red-400 font-medium">🔴 Recording in progress - Speak clearly</span>
         ) : (
-          <span>Make sure your microphone is enabled</span>
+          <span>💡 Make sure your microphone is enabled and working</span>
         )}
       </div>
     </div>

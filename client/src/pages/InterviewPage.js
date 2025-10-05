@@ -25,8 +25,33 @@ const InterviewPage = () => {
   const difficulty = urlParams.get('difficulty');
   const mode = urlParams.get('mode');
 
+  // Redirect if essential parameters are missing
   useEffect(() => {
-    loadQuestions();
+    if (!testType || !difficulty) {
+      console.error('Missing required parameters: testType or difficulty');
+      navigate('/');
+      return;
+    }
+  }, [testType, difficulty, navigate]);
+
+  // Handle browser back button
+  useEffect(() => {
+    const handlePopState = (event) => {
+      event.preventDefault();
+      navigate('/', { replace: true });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (testType && difficulty) {
+      loadQuestions();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [testType, difficulty]);
 
@@ -41,11 +66,26 @@ const InterviewPage = () => {
   const loadQuestions = async () => {
     try {
       setLoading(true);
+      console.log(`🤖 Requesting AI questions for ${testType} - ${difficulty}`);
+      
       const response = await interviewAPI.getQuestions(testType, difficulty);
-      setQuestions(response.data.questions);
+      const questionsData = response.data.questions;
+      const metadata = response.data.metadata;
+      
+      console.log('📊 Questions received:', questionsData);
+      
+      // Verify all questions are AI-generated
+      const allAIGenerated = questionsData.every(q => q.aiGenerated === true);
+      console.log(`🤖 All questions AI-generated: ${allAIGenerated}`);
+      
+      if (metadata) {
+        console.log(`✅ Generation confirmed: ${metadata.allAIGenerated}`);
+      }
+      
+      setQuestions(questionsData);
     } catch (error) {
       console.error('Failed to load questions:', error);
-      alert('Failed to load questions. Please try again.');
+      alert('Failed to load AI questions. Please try again.');
       navigate('/');
     } finally {
       setLoading(false);
@@ -190,36 +230,47 @@ const InterviewPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-xl text-gray-600">Loading interview questions...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+          <p className="mt-4 text-xl text-gray-600 dark:text-gray-300">Loading interview questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if essential parameters are missing
+  if (!testType || !difficulty) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl text-gray-600 dark:text-gray-300">Redirecting...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b px-4 py-4">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-4 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center text-gray-600 hover:text-gray-900"
+            className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <FiArrowLeft className="h-5 w-5 mr-2" />
             Back to Home
           </button>
           <div className="text-center">
-            <h1 className="text-xl font-semibold text-gray-900">
-              {testType.charAt(0).toUpperCase() + testType.slice(1)} Interview
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {testType ? testType.charAt(0).toUpperCase() + testType.slice(1) : 'Unknown'} Interview
             </h1>
-            <p className="text-sm text-gray-600">
-              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} • {mode === 'voice' ? 'Voice Input' : 'Text Input'}
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {difficulty ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1) : 'Unknown'} • {mode === 'voice' ? 'Voice Input' : 'Text Input'}
             </p>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
             Question {Math.min(currentQuestionIndex + 1, questions.length)} of {questions.length}
           </div>
         </div>
@@ -227,7 +278,7 @@ const InterviewPage = () => {
 
       {/* Chat Interface */}
       <div className="max-w-4xl mx-auto p-4">
-        <div className="bg-white rounded-lg shadow-md min-h-[600px] flex flex-col">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md min-h-[600px] flex flex-col">
           {/* Messages Area */}
           <div className="flex-1 p-6 overflow-y-auto space-y-6">
             {/* Display all previous Q&A pairs */}
@@ -235,29 +286,33 @@ const InterviewPage = () => {
               <div key={index} className="space-y-4">
                 {/* Question */}
                 <div className="flex justify-start">
-                  <div className="max-w-3xl bg-blue-100 rounded-lg px-4 py-3">
+                  <div className="max-w-3xl bg-blue-100 dark:bg-blue-900 rounded-lg px-4 py-3">
                     <div className="flex items-center space-x-2 mb-2">
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-medium">AI</span>
                       </div>
-                      <span className="font-medium text-blue-900">Interviewer</span>
+                      <span className="font-medium text-blue-900 dark:text-blue-200">AI Interviewer</span>
+                      {/* AI Generated Badge */}
+                      <span className="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs px-2 py-1 rounded-full font-medium">
+                        🤖 AI Generated
+                      </span>
                     </div>
-                    <p className="text-gray-800">{answer.question}</p>
+                    <p className="text-gray-800 dark:text-gray-200">{answer.question}</p>
                   </div>
                 </div>
 
                 {/* Answer */}
                 <div className="flex justify-end">
-                  <div className="max-w-3xl bg-gray-100 rounded-lg px-4 py-3">
+                  <div className="max-w-3xl bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-3">
                     <div className="flex items-center space-x-2 mb-2">
-                      <span className="font-medium text-gray-900">You</span>
-                      <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                      <span className="font-medium text-gray-900 dark:text-gray-200">You</span>
+                      <div className="w-8 h-8 bg-gray-600 dark:bg-gray-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-medium">
-                          {user ? user.name.charAt(0).toUpperCase() : 'G'}
+                          {user && user.name ? user.name.charAt(0).toUpperCase() : 'G'}
                         </span>
                       </div>
                     </div>
-                    <p className="text-gray-800">{answer.answer}</p>
+                    <p className="text-gray-800 dark:text-gray-200">{answer.answer}</p>
                   </div>
                 </div>
               </div>
@@ -266,14 +321,18 @@ const InterviewPage = () => {
             {/* Current Question */}
             {!isCompleted && questions[currentQuestionIndex] && (
               <div className="flex justify-start">
-                <div className="max-w-3xl bg-blue-100 rounded-lg px-4 py-3">
+                <div className="max-w-3xl bg-blue-100 dark:bg-blue-900 rounded-lg px-4 py-3">
                   <div className="flex items-center space-x-2 mb-2">
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center">
                       <span className="text-white text-sm font-medium">AI</span>
                     </div>
-                    <span className="font-medium text-blue-900">Interviewer</span>
+                    <span className="font-medium text-blue-900 dark:text-blue-200">AI Interviewer</span>
+                    {/* AI Generated Badge */}
+                    <span className="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 text-xs px-2 py-1 rounded-full font-medium">
+                      🤖 AI Generated
+                    </span>
                   </div>
-                  <p className="text-gray-800">{questions[currentQuestionIndex].question}</p>
+                  <p className="text-gray-800 dark:text-gray-200">{questions[currentQuestionIndex].question}</p>
                 </div>
               </div>
             )}
@@ -283,12 +342,12 @@ const InterviewPage = () => {
 
           {/* Input Area */}
           {!isCompleted && (
-            <div className="border-t p-4">
+            <div className="border-t border-gray-200 dark:border-gray-700 p-4">
               {mode === 'voice' && (
-                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex items-center justify-center mb-3">
-                    <div className="bg-blue-100 px-3 py-1 rounded-full">
-                      <span className="text-sm font-medium text-blue-800">Voice Mode Active</span>
+                    <div className="bg-blue-100 dark:bg-blue-800 px-3 py-1 rounded-full">
+                      <span className="text-sm font-medium text-blue-800 dark:text-blue-200">Voice Mode Active</span>
                     </div>
                   </div>
                   <VoiceInput 
@@ -303,9 +362,11 @@ const InterviewPage = () => {
                   value={currentAnswer}
                   onChange={(e) => setCurrentAnswer(e.target.value)}
                   placeholder={mode === 'voice' ? 'Your voice input will appear here, or type manually...' : 'Type your answer here...'}
-                  className={`flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${
-                    mode === 'voice' ? 'bg-gray-50 border-gray-200' : 'border-gray-300'
-                  }`}
+                  className={`flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none transition-colors ${
+                    mode === 'voice' 
+                      ? 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100' 
+                      : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                  } placeholder-gray-500 dark:placeholder-gray-400`}
                   rows="4"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -317,7 +378,7 @@ const InterviewPage = () => {
                 <button
                   onClick={handleSubmitAnswer}
                   disabled={!currentAnswer.trim()}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
+                  className="px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors"
                   title="Submit Answer"
                 >
                   <FiSend className="h-5 w-5" />
@@ -325,13 +386,13 @@ const InterviewPage = () => {
               </div>
               
               <div className="mt-2 flex justify-between items-center">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {mode === 'voice' 
                     ? 'Use voice input above or type manually. Press Enter to submit, Shift+Enter for new line' 
                     : 'Press Enter to submit, Shift+Enter for new line'
                   }
                 </p>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-gray-400 dark:text-gray-500">
                   {currentAnswer.length} characters
                 </div>
               </div>
@@ -343,56 +404,30 @@ const InterviewPage = () => {
       {/* Results Modal */}
       {showResults && results && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold text-center mb-6">Interview Complete!</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full">
+            <div className="p-6 text-center">
+              <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Interview Complete!</h2>
               
-              {/* Score */}
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 mb-4">
-                  <span className="text-2xl font-bold text-blue-600">{results.score}%</span>
+              {/* Score Only */}
+              <div className="mb-8">
+                <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-blue-100 dark:bg-blue-900 mb-4">
+                  <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">{results.score}%</span>
                 </div>
-                <p className="text-gray-600">Your overall score</p>
-              </div>
-
-              {/* Strengths & Weaknesses */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <h3 className="font-semibold text-green-600 mb-2">Strengths</h3>
-                  <ul className="space-y-1">
-                    {results.strengths.map((strength, index) => (
-                      <li key={index} className="text-sm text-gray-600">• {strength}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-orange-600 mb-2">Areas for Improvement</h3>
-                  <ul className="space-y-1">
-                    {results.weaknesses.map((weakness, index) => (
-                      <li key={index} className="text-sm text-gray-600">• {weakness}</li>
-                    ))}
-                  </ul>
-                </div>
+                <p className="text-lg text-gray-600 dark:text-gray-400">Your Score</p>
               </div>
 
               {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={() => navigate('/profile')}
                   disabled={!user}
-                  className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 px-4 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {user ? 'View Profile' : 'Login to Save Results'}
                 </button>
                 <button
-                  onClick={handleRetakeInterview}
-                  className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                >
-                  Retake Interview
-                </button>
-                <button
                   onClick={() => navigate('/')}
-                  className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  className="w-full py-3 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
                 >
                   Back to Home
                 </button>

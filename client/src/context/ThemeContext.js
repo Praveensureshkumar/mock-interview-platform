@@ -12,21 +12,14 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check if we're on the profile page and force dark mode
-    const isProfilePage = window.location.pathname === '/profile';
-    
     // Check localStorage for saved theme preference
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme && !isProfilePage) {
+    if (savedTheme) {
       return savedTheme === 'dark';
     }
     
-    // Default profile page to dark mode, otherwise use system preference
-    if (isProfilePage) {
-      return true;
-    }
-    
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Default to dark mode
+    return true;
   });
 
   useEffect(() => {

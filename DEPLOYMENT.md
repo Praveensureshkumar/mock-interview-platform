@@ -6,55 +6,54 @@
 - **`main`** - Production-ready code (stable releases)
 - **`development`** - Development branch (active development)
 
-## 🐳 Docker Setup
+## ⚙️ Local Development (No Docker)
+
+This project can be run locally without Docker. Follow the steps below to set up and run both backend and frontend on your machine.
 
 ### Development Environment
-```bash
-# Run with Docker Compose (Development)
-docker-compose up --build
+```powershell
+# Backend
+cd server
+npm install
+npm run dev
 
-# Run in detached mode
-docker-compose up -d --build
-
-# Stop services
-docker-compose down
+# Frontend (in a separate terminal)
+cd client
+npm install
+npm start
 ```
 
-### Production Environment
-```bash
-# Setup environment variables
-cp .env.example .env.prod
-# Edit .env.prod with your production values
+### Production Build (Static Frontend + Node API)
+1. Build the frontend:
+```powershell
+cd client
+npm run build
+```
+2. Serve the built frontend using your preferred static server (e.g., serve, nginx) and run the backend API:
+```powershell
+# Serve static site (optional)
+npm install -g serve
+serve -s build -l 3000
 
-# Run production build
-docker-compose -f docker-compose.prod.yml up -d --build
-
-# View logs
-docker-compose -f docker-compose.prod.yml logs -f
+# Start backend
+cd ../server
+npm start
 ```
 
-## ☁️ Cloud Deployment Options
+## ☁️ Cloud Deployment Options (Non-Docker Guidance)
 
-### Option 1: AWS (Recommended)
-- **ECS (Elastic Container Service)** for container orchestration
-- **RDS MongoDB** or **DocumentDB** for database
-- **ALB (Application Load Balancer)** for traffic distribution
-- **ECR (Elastic Container Registry)** for Docker images
+Below are recommended cloud deployment approaches that do not require Docker images. Choose the one that fits your infrastructure and provisioning preferences.
 
-### Option 2: Azure
-- **Azure Container Instances** or **Azure Kubernetes Service**
-- **Azure Cosmos DB** (MongoDB API)
-- **Azure Container Registry**
+### Option 1: Platform-as-a-Service (PaaS)
+- **Heroku / Render / Vercel**: Deploy the backend as a Node.js application and frontend as a static site (Vercel recommended for React apps).
+- **MongoDB Atlas**: Use a managed MongoDB cluster and connect your backend via the provided connection string.
 
-### Option 3: Google Cloud Platform
-- **Google Kubernetes Engine** or **Cloud Run**
-- **Cloud MongoDB Atlas**
-- **Google Container Registry**
+### Option 2: Virtual Machines / Managed Instances
+- **AWS EC2 / Azure VM / Google Compute Engine**: Provision a VM, install Node.js and Nginx (or serve the static build), and configure a process manager (PM2) for the backend.
 
-### Option 4: DigitalOcean (Budget-friendly)
-- **App Platform** for easy deployment
-- **Managed MongoDB**
-- **Container Registry**
+### Option 3: Serverless / Managed Services
+- **Serverless Functions**: Use cloud functions (Azure Functions, AWS Lambda via API Gateway) for the API endpoints if you refactor to a serverless-friendly design.
+- **Static Frontend Hosting**: Use S3 + CloudFront (AWS), Azure Storage static site, or Vercel/Netlify for static builds.
 
 ## 🚀 Deployment Workflow
 
@@ -81,16 +80,7 @@ npm install
 npm start
 ```
 
-### Docker Development:
-```bash
-# Start all services
-docker-compose up --build
-
-# Access:
-# Frontend: http://localhost:3000
-# Backend: http://localhost:5000
-# MongoDB: localhost:27017
-```
+<!-- Docker sections removed. The project provides non-Docker local and cloud deployment instructions above. -->
 
 ## 🔧 Environment Variables
 
@@ -102,12 +92,11 @@ JWT_SECRET=very_long_secure_secret_key
 API_URL=https://your-production-domain.com
 ```
 
-## 📦 Container Details
+## 📦 Deployment Details
 
-- **Frontend**: React app served with nginx
-- **Backend**: Node.js Express API
-- **Database**: MongoDB with authentication
-- **Network**: Isolated Docker network for security
+- **Frontend**: Build the React app (`npm run build`) and host the static files on a static hosting service or a web server.
+- **Backend**: Node.js Express API; use a process manager like `pm2` to keep the process running in production.
+- **Database**: Use MongoDB Atlas or a managed MongoDB instance.
 
 ## 🔐 Security Features
 
@@ -115,7 +104,6 @@ API_URL=https://your-production-domain.com
 - Password hashing with bcryptjs
 - CORS configuration
 - Environment variable protection
-- Docker network isolation
 
 ## 📊 Monitoring (Future)
 

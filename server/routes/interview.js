@@ -7,7 +7,7 @@ const huggingFaceService = require('../services/huggingFaceService');
 const router = express.Router();
 
 // @route   GET /api/interview/questions
-// @desc    Get AI-generated questions by test type and difficulty
+// @desc    Get AI-generated questions only (no database/fallback)
 // @access  Public
 router.get('/questions', async (req, res) => {
   try {
@@ -17,21 +17,44 @@ router.get('/questions', async (req, res) => {
       return res.status(400).json({ message: 'Test type and difficulty are required' });
     }
 
-    console.log(`🤖 Generating AI questions for ${testType} - ${difficulty}`);
+    console.log('\n🤖 =================================');
+    console.log(`🎯 AI QUESTION GENERATION REQUEST`);
+    console.log(`📊 Category: ${testType.toUpperCase()}`);
+    console.log(`📊 Difficulty: ${difficulty.toUpperCase()}`);
+    console.log(`⏰ Timestamp: ${new Date().toISOString()}`);
+    console.log('🤖 =================================\n');
     
-    // Generate questions using Hugging Face AI (2 questions for testing)
+    // Generate ONLY AI questions with randomization
     const questions = await huggingFaceService.generateQuestions(testType, difficulty, 2);
 
     if (!questions || questions.length === 0) {
-      return res.status(404).json({ message: 'No questions could be generated' });
+      console.log('❌ AI question generation completely failed');
+      return res.status(404).json({ message: 'AI question generation failed. Please try again.' });
     }
 
-    console.log(`✅ Generated ${questions.length} questions successfully`);
-    res.json({ questions });
+    console.log('\n✅ =================================');
+    console.log(`🎉 AI QUESTIONS GENERATED SUCCESSFULLY`);
+    console.log(`📝 Count: ${questions.length}`);
+    questions.forEach((q, index) => {
+      console.log(`\n${index + 1}. QUESTION: ${q.question}`);
+      console.log(`   🤖 AI Generated: ${q.aiGenerated}`);
+      console.log(`   🆔 Unique ID: ${q.uniqueId}`);
+    });
+    console.log('✅ =================================\n');
+
+    res.json({ 
+      questions,
+      metadata: {
+        totalQuestions: questions.length,
+        allAIGenerated: questions.every(q => q.aiGenerated)
+      }
+    });
 
   } catch (error) {
-    console.error('AI Questions generation error:', error);
-    res.status(500).json({ message: 'Server error while generating questions' });
+    console.error('\n❌ =================================');
+    console.error('💥 AI Questions generation error:', error);
+    console.error('❌ =================================\n');
+    res.status(500).json({ message: 'Server error while generating AI questions' });
   }
 });
 

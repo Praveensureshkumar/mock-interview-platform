@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCode, FiMonitor, FiServer, FiUsers } from 'react-icons/fi';
+import { FiCode, FiMonitor, FiServer, FiUsers, FiSun, FiMoon, FiDatabase } from 'react-icons/fi';
+import { SiPython, SiJavascript, SiReact } from 'react-icons/si';
+import { useTheme } from '../context/ThemeContext';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const { isDarkMode, toggleTheme } = useTheme();
   const [selectedTest, setSelectedTest] = useState('');
   const [difficulty, setDifficulty] = useState('beginner');
   const [mode, setMode] = useState('typed');
@@ -11,31 +14,59 @@ const HomePage = () => {
   const testTypes = [
     {
       id: 'fullstack',
-      name: 'Full-Stack',
+      name: 'Full-Stack Developer',
       icon: FiCode,
-      description: 'Complete web development questions covering frontend, backend, and database concepts',
+      description: 'Complete web development: frontend, backend, databases, and system design',
       color: 'bg-purple-500'
     },
     {
       id: 'frontend',
-      name: 'Front-End',
+      name: 'Frontend Developer',
       icon: FiMonitor,
-      description: 'HTML, CSS, JavaScript, React, and UI/UX development questions',
+      description: 'UI/UX, React, JavaScript, HTML/CSS, and responsive design',
       color: 'bg-blue-500'
     },
     {
       id: 'backend',
-      name: 'Back-End',
+      name: 'Backend Developer',
       icon: FiServer,
-      description: 'Server-side development, databases, APIs, and system architecture',
+      description: 'APIs, databases, server architecture, security, and scalability',
       color: 'bg-green-500'
     },
     {
-      id: 'hr',
-      name: 'HR',
-      icon: FiUsers,
-      description: 'Behavioral questions, soft skills, and general interview preparation',
+      id: 'python',
+      name: 'Python Developer',
+      icon: SiPython,
+      description: 'Python programming, Django/Flask, data structures, and algorithms',
+      color: 'bg-yellow-500'
+    },
+    {
+      id: 'javascript',
+      name: 'JavaScript Developer',
+      icon: SiJavascript,
+      description: 'ES6+, async/await, DOM manipulation, and modern JavaScript concepts',
       color: 'bg-orange-500'
+    },
+    {
+      id: 'sql',
+      name: 'Database Developer',
+      icon: FiDatabase,
+      description: 'SQL/NoSQL databases, queries, optimization, and database design',
+      color: 'bg-indigo-500'
+    },
+    {
+      id: 'react',
+      name: 'React Developer',
+      icon: SiReact,
+      description: 'React components, hooks, state management, and React ecosystem',
+      color: 'bg-cyan-500'
+    },
+    {
+      id: 'nodejs',
+      name: 'Node.js Developer',
+      icon: FiServer,
+      description: 'Server-side JavaScript, Express.js, async programming, and NPM',
+      color: 'bg-emerald-500'
     }
   ];
 
@@ -52,7 +83,20 @@ const HomePage = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 relative">
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="absolute top-0 right-4 md:right-8 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-gray-200 dark:border-gray-600 group"
+            aria-label="Toggle theme"
+          >
+            {isDarkMode ? (
+              <FiSun className="h-6 w-6 text-yellow-500 group-hover:text-yellow-400 transition-colors duration-300" />
+            ) : (
+              <FiMoon className="h-6 w-6 text-blue-500 group-hover:text-blue-400 transition-colors duration-300" />
+            )}
+          </button>
+
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
             AI-Powered Mock Interview Platform
           </h1>

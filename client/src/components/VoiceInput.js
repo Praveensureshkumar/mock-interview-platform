@@ -9,7 +9,6 @@ const VoiceInput = ({ onTranscript, disabled }) => {
   const [retryCount, setRetryCount] = useState(0);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const recognitionRef = useRef(null);
-  const transcriptTimeoutRef = useRef(null);
   const maxRetries = 3;
 
   // Memoize the onTranscript callback to prevent unnecessary re-renders
@@ -39,7 +38,7 @@ const VoiceInput = ({ onTranscript, disabled }) => {
     const recognitionInstance = new SpeechRecognition();
     
     // Configure speech recognition
-    recognitionInstance.continuous = false; // Changed back to false for better control
+    recognitionInstance.continuous = true; // Changed back to true for continuous listening
     recognitionInstance.interimResults = true;
     recognitionInstance.lang = 'en-US';
     recognitionInstance.maxAlternatives = 1;
@@ -53,25 +52,9 @@ const VoiceInput = ({ onTranscript, disabled }) => {
     };
 
     recognitionInstance.onend = () => {
-      console.log('🛑 Speech recognition ended');
-      
-      // If we were listening and it ended naturally (not manually stopped), restart it
-      if (isListening && !networkError && !isOffline && navigator.onLine) {
-        console.log('🔄 Restarting speech recognition for continuous listening...');
-        setTimeout(() => {
-          try {
-            if (recognitionRef.current && isListening) {
-              recognitionRef.current.start();
-            }
-          } catch (e) {
-            console.error('Error restarting recognition:', e);
-            setIsListening(false);
-          }
-        }, 100); // Small delay to prevent immediate restart issues
-      } else {
-        setIsListening(false);
-        setInterimTranscript('');
-      }
+      console.log('🛑 Speech recognition ended - isListening state:', isListening);
+      setIsListening(false);
+      setInterimTranscript('');
     };
 
     recognitionInstance.onresult = (event) => {
@@ -91,15 +74,10 @@ const VoiceInput = ({ onTranscript, disabled }) => {
       
       if (finalTranscript.trim()) {
         console.log('📝 Final transcript:', finalTranscript);
+        console.log('🔄 Calling handleTranscript with:', finalTranscript);
         
-        // Debounce final transcript to prevent rapid-fire updates
-        if (transcriptTimeoutRef.current) {
-          clearTimeout(transcriptTimeoutRef.current);
-        }
-        
-        transcriptTimeoutRef.current = setTimeout(() => {
-          handleTranscript(finalTranscript);
-        }, 500); // Wait 500ms before sending transcript
+        // Send transcript immediately without debouncing for better responsiveness
+        handleTranscript(finalTranscript);
       }
     };
 
@@ -111,9 +89,11 @@ const VoiceInput = ({ onTranscript, disabled }) => {
       // Handle different error types with more user-friendly messages
       switch (event.error) {
         case 'no-speech':
-          // Don't show alert for no-speech, just log it
-          console.log('No speech detected, waiting for input...');
-          break;
+          // Don't show alert for no-speech, but log it and keep listening
+          console.log('⚠️ No speech detected, but keeping recognition active...');
+          // Don't set isListening to false for no-speech - let it continue
+          return; // Exit early to avoid setting isListening to false
+          
         case 'audio-capture':
           alert('❌ No microphone found. Please check your microphone connection and try again.');
           break;
@@ -195,11 +175,6 @@ const VoiceInput = ({ onTranscript, disabled }) => {
         } catch (e) {
           console.log('Error cleaning up recognition:', e);
         }
-      }
-      
-      // Clear any pending transcript timeouts
-      if (transcriptTimeoutRef.current) {
-        clearTimeout(transcriptTimeoutRef.current);
       }
     };
   }, [handleTranscript]);

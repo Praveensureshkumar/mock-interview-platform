@@ -207,6 +207,7 @@ const InterviewPage = () => {
   };
 
   const handleVoiceTranscript = (transcript) => {
+    console.log('🎯 InterviewPage received voice transcript:', transcript);
     // Clean up the transcript and add it to current answer
     const cleanedTranscript = transcript.trim();
     if (cleanedTranscript) {
@@ -216,9 +217,11 @@ const InterviewPage = () => {
         // If previous answer is empty, just set the new transcript
         // Otherwise, add a space and then the new transcript
         const newAnswer = prevTrimmed ? `${prevTrimmed} ${cleanedTranscript}` : cleanedTranscript;
-        console.log('📝 Updated answer:', newAnswer);
+        console.log('📝 Updated answer from:', prev, 'to:', newAnswer);
         return newAnswer;
       });
+    } else {
+      console.log('⚠️ Empty transcript received, ignoring');
     }
   };
 

@@ -350,6 +350,8 @@ const InterviewPage = () => {
                   <VoiceInput 
                     onTranscript={handleVoiceTranscript}
                     disabled={isCompleted}
+                    shouldReadQuestion={mode === 'voice' && !isCompleted}
+                    questionText={questions[currentQuestionIndex]?.question}
                   />
                 </div>
               )}

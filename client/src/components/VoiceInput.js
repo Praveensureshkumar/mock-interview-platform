@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FiMic, FiMicOff } from 'react-icons/fi';
 
-const VoiceInput = ({ onTranscript, disabled }) => {
+const VoiceInput = ({ onTranscript, disabled, shouldReadQuestion, questionText }) => {
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
   const [interimTranscript, setInterimTranscript] = useState('');
@@ -9,7 +9,9 @@ const VoiceInput = ({ onTranscript, disabled }) => {
   const [retryCount, setRetryCount] = useState(0);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [speechNotSupported, setSpeechNotSupported] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef(null);
+  const speechSynthesisRef = useRef(null);
   const maxRetries = 3;
 
   // Memoize the onTranscript callback to prevent unnecessary re-renders
@@ -18,6 +20,65 @@ const VoiceInput = ({ onTranscript, disabled }) => {
       onTranscript(transcript);
     }
   }, [onTranscript]);
+
+  // Text-to-Speech function for reading questions
+  const speakQuestion = useCallback((text) => {
+    if (!text || !('speechSynthesis' in window)) {
+      console.log('❌ Text-to-speech not supported or no text provided');
+      return;
+    }
+
+    // Stop any current speech
+    speechSynthesis.cancel();
+    
+    setIsSpeaking(true);
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Configure voice settings
+    utterance.rate = 0.9; // Slightly slower for clarity
+    utterance.pitch = 1.0;
+    utterance.volume = 0.8;
+    
+    // Try to use a professional voice
+    const voices = speechSynthesis.getVoices();
+    const preferredVoice = voices.find(voice => 
+      voice.name.includes('Microsoft') || 
+      voice.name.includes('Google') ||
+      voice.lang.startsWith('en')
+    );
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+
+    utterance.onstart = () => {
+      console.log('🔊 Started reading question');
+      setIsSpeaking(true);
+    };
+
+    utterance.onend = () => {
+      console.log('✅ Finished reading question');
+      setIsSpeaking(false);
+    };
+
+    utterance.onerror = (event) => {
+      console.error('❌ Text-to-speech error:', event.error);
+      setIsSpeaking(false);
+    };
+
+    speechSynthesis.speak(utterance);
+    speechSynthesisRef.current = utterance;
+  }, []);
+
+  // Auto-read question when it changes (only in voice mode)
+  useEffect(() => {
+    if (shouldReadQuestion && questionText && !isSpeaking && !isListening) {
+      console.log('🔊 Auto-reading question in voice mode');
+      // Small delay to ensure UI is ready
+      setTimeout(() => {
+        speakQuestion(questionText);
+      }, 1000);
+    }
+  }, [shouldReadQuestion, questionText, speakQuestion, isSpeaking, isListening]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -228,6 +289,12 @@ const VoiceInput = ({ onTranscript, disabled }) => {
           console.log('Error cleaning up recognition:', e);
         }
       }
+      
+      // Stop any ongoing speech synthesis
+      if (speechSynthesis && speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+        setIsSpeaking(false);
+      }
     };
   }, [handleTranscript]);
 
@@ -310,6 +377,9 @@ const VoiceInput = ({ onTranscript, disabled }) => {
         // Test speech recognition service availability first
         console.log('🔍 Testing speech recognition service availability...');
         
+        // First, test if we can access the microphone at all
+        console.log('🎤 Testing microphone access...');
+        
         // Request microphone permission first
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -378,6 +448,23 @@ const VoiceInput = ({ onTranscript, disabled }) => {
 
   return (
     <div className="flex flex-col items-center space-y-4">
+      {/* Read Question Button (only in voice mode) */}
+      {shouldReadQuestion && questionText && (
+        <div className="text-center">
+          <button
+            onClick={() => speakQuestion(questionText)}
+            disabled={isSpeaking}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              isSpeaking 
+                ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 cursor-not-allowed'
+                : 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800/30'
+            }`}
+          >
+            {isSpeaking ? '🔊 Reading Question...' : '🔊 Read Question Aloud'}
+          </button>
+        </div>
+      )}
+
       {/* Test Speech Recognition Button (only show if having issues) */}
       {(networkError || retryCount > 0) && (
         <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg mb-2">
@@ -421,14 +508,18 @@ const VoiceInput = ({ onTranscript, disabled }) => {
 
       <button
         onClick={toggleListening}
-        disabled={disabled || isOffline}
+        disabled={disabled || isOffline || isSpeaking}
         className={`relative p-4 rounded-full transition-all duration-300 transform hover:scale-105 ${
-          isListening
+          isSpeaking
+            ? 'bg-yellow-500 text-white animate-pulse shadow-lg ring-4 ring-yellow-200 dark:ring-yellow-800'
+            : isListening
             ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse shadow-lg ring-4 ring-red-200 dark:ring-red-800'
             : 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
-        } ${disabled || isOffline ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        } ${disabled || isOffline || isSpeaking ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         title={
-          isOffline 
+          isSpeaking
+            ? 'AI is speaking - please wait'
+            : isOffline 
             ? 'Voice input unavailable - you are offline' 
             : isListening 
               ? 'Click to stop recording' 
@@ -449,7 +540,9 @@ const VoiceInput = ({ onTranscript, disabled }) => {
       
       <div className="text-center">
         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          {isListening ? '🎙️ Listening... Click to stop' : '🎤 Click to start speaking'}
+          {isSpeaking ? '🔊 AI is speaking... Please wait' : 
+           isListening ? '🎙️ Listening... Click to stop' : 
+           '🎤 Click to start speaking'}
         </p>
         {interimTranscript && (
           <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
@@ -462,7 +555,9 @@ const VoiceInput = ({ onTranscript, disabled }) => {
       
       {/* Instructions */}
       <div className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-xs">
-        {isOffline ? (
+        {isSpeaking ? (
+          <span className="text-yellow-600 dark:text-yellow-400 font-medium">🔊 AI is reading the question - Please wait</span>
+        ) : isOffline ? (
           <span className="text-red-600 dark:text-red-400 font-medium">📡 Offline - Speech recognition unavailable</span>
         ) : networkError ? (
           <span className="text-orange-600 dark:text-orange-400 font-medium">⚠️ Speech service issues - Use text input instead</span>

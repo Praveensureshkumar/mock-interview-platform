@@ -2,15 +2,23 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const User = require('../models/User');
 const { auth } = require('../middleware/auth');
+const emailService = require('../services/emailService');
 
 const router = express.Router();
+
+// Ensure upload directory exists
+const uploadDir = 'uploads/profiles/';
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/profiles/');
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -34,7 +42,11 @@ const upload = multer({
 
 // Generate JWT token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET || 'fallback_secret_key', {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required for production');
+  }
+  return jwt.sign({ userId }, secret, {
     expiresIn: '7d'
   });
 };
@@ -59,9 +71,14 @@ router.post('/signup', async (req, res) => {
       password
     });
 
+    // Generate email verification token
+    const verificationToken = user.generateEmailVerificationToken();
     await user.save();
 
-    // Generate token
+    // Send verification email
+    const emailResult = await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
+    
+    // Generate token for immediate login (but mark as unverified)
     const token = generateToken(user._id);
 
     res.status(201).json({
@@ -71,8 +88,11 @@ router.post('/signup', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        profilePicture: user.profilePicture
-      }
+        profilePicture: user.profilePicture,
+        isEmailVerified: user.isEmailVerified
+      },
+      message: 'Account created successfully! Please check your email to verify your account.',
+      emailSent: emailResult.success
     });
 
   } catch (error) {
@@ -117,6 +137,160 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
+  }
+});
+
+// @route   GET /api/auth/verify-email
+// @desc    Verify user email
+// @access  Public
+router.get('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({ message: 'Verification token is required' });
+    }
+
+    // Find user with this verification token
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        message: 'Invalid or expired verification token. Please request a new verification email.' 
+      });
+    }
+
+    // Mark email as verified
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully! You can now use all platform features.'
+    });
+
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ message: 'Server error during email verification' });
+  }
+});
+
+// @route   POST /api/auth/resend-verification
+// @desc    Resend email verification
+// @access  Private
+router.post('/resend-verification', auth, async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (user.isEmailVerified) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    // Generate new verification token
+    const verificationToken = user.generateEmailVerificationToken();
+    await user.save();
+
+    // Send verification email
+    const emailResult = await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
+
+    res.json({
+      success: true,
+      message: 'Verification email sent successfully!',
+      emailSent: emailResult.success
+    });
+
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ message: 'Server error while resending verification email' });
+  }
+});
+
+// @route   POST /api/auth/forgot-password
+// @desc    Send password reset email
+// @access  Public
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      // Don't reveal if email exists for security
+      return res.json({
+        success: true,
+        message: 'If an account exists with this email, you will receive password reset instructions.'
+      });
+    }
+
+    // Generate password reset token
+    const resetToken = user.generatePasswordResetToken();
+    await user.save();
+
+    // Send password reset email
+    const emailResult = await emailService.sendPasswordResetEmail(user.email, user.name, resetToken);
+
+    res.json({
+      success: true,
+      message: 'If an account exists with this email, you will receive password reset instructions.',
+      emailSent: emailResult.success
+    });
+
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Server error while processing password reset request' });
+  }
+});
+
+// @route   POST /api/auth/reset-password
+// @desc    Reset password with token
+// @access  Public
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    // Find user with valid reset token
+    const user = await User.findOne({
+      passwordResetToken: token,
+      passwordResetExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        message: 'Invalid or expired reset token. Please request a new password reset.' 
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully! You can now login with your new password.'
+    });
+
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Server error during password reset' });
   }
 });
 

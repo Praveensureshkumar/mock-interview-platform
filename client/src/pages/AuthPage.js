@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 
@@ -124,6 +124,19 @@ const AuthPage = () => {
                 />
               </div>
             </div>
+
+            {isLogin && (
+              <div className="flex items-center justify-end">
+                <div className="text-sm">
+                  <Link
+                    to="/forgot-password"
+                    className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
+              </div>
+            )}
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">

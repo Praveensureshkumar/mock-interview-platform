@@ -9,7 +9,13 @@ const auth = async (req, res, next) => {
       return res.status(401).json({ message: 'No token, authorization denied' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('JWT_SECRET environment variable is required');
+      return res.status(500).json({ message: 'Server configuration error' });
+    }
+
+    const decoded = jwt.verify(token, secret);
     const user = await User.findById(decoded.userId).select('-password');
     
     if (!user) {
@@ -30,9 +36,12 @@ const optionalAuth = async (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
-      const user = await User.findById(decoded.userId).select('-password');
-      req.user = user;
+      const secret = process.env.JWT_SECRET;
+      if (secret) {
+        const decoded = jwt.verify(token, secret);
+        const user = await User.findById(decoded.userId).select('-password');
+        req.user = user;
+      }
     }
     
     next();

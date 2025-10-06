@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCode, FiMonitor, FiServer, FiUsers, FiSun, FiMoon, FiDatabase } from 'react-icons/fi';
+import { FiCode, FiMonitor, FiServer, FiSun, FiMoon, FiDatabase } from 'react-icons/fi';
 import { SiPython, SiJavascript, SiReact } from 'react-icons/si';
 import { useTheme } from '../context/ThemeContext';
 

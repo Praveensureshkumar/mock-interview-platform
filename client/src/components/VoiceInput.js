@@ -10,6 +10,7 @@ const VoiceInput = ({ onTranscript, disabled, shouldReadQuestion, questionText }
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [speechNotSupported, setSpeechNotSupported] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [lastSpokenQuestion, setLastSpokenQuestion] = useState('');
   const recognitionRef = useRef(null);
   const speechSynthesisRef = useRef(null);
   const maxRetries = 3;
@@ -22,16 +23,10 @@ const VoiceInput = ({ onTranscript, disabled, shouldReadQuestion, questionText }
   }, [onTranscript]);
 
   // Text-to-Speech function for reading questions
-  const speakQuestion = useCallback((text) => {
-    if (!text || !('speechSynthesis' in window)) {
-      console.log('❌ Text-to-speech not supported or no text provided');
-      return;
-    }
-
-    // Stop any current speech
-    speechSynthesis.cancel();
-    
+  const startSpeaking = useCallback((text) => {
     setIsSpeaking(true);
+    setLastSpokenQuestion(text);
+    
     const utterance = new SpeechSynthesisUtterance(text);
     
     // Configure voice settings
@@ -39,16 +34,24 @@ const VoiceInput = ({ onTranscript, disabled, shouldReadQuestion, questionText }
     utterance.pitch = 1.0;
     utterance.volume = 0.8;
     
-    // Try to use a professional voice
-    const voices = speechSynthesis.getVoices();
-    const preferredVoice = voices.find(voice => 
-      voice.name.includes('Microsoft') || 
-      voice.name.includes('Google') ||
-      voice.lang.startsWith('en')
-    );
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
-    }
+    // Set voice after voices are loaded
+    const setVoiceAndSpeak = () => {
+      const voices = speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        // Try to use a professional voice
+        const preferredVoice = voices.find(voice => 
+          voice.name.includes('Microsoft') || 
+          voice.name.includes('Google') ||
+          voice.lang.startsWith('en')
+        );
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+      }
+      
+      speechSynthesis.speak(utterance);
+      speechSynthesisRef.current = utterance;
+    };
 
     utterance.onstart = () => {
       console.log('🔊 Started reading question');
@@ -63,22 +66,63 @@ const VoiceInput = ({ onTranscript, disabled, shouldReadQuestion, questionText }
     utterance.onerror = (event) => {
       console.error('❌ Text-to-speech error:', event.error);
       setIsSpeaking(false);
+      // Reset the last spoken question if there was an error
+      setLastSpokenQuestion('');
     };
 
-    speechSynthesis.speak(utterance);
-    speechSynthesisRef.current = utterance;
+    // Handle voices loading
+    if (speechSynthesis.getVoices().length === 0) {
+      // Voices not loaded yet, wait for them
+      speechSynthesis.onvoiceschanged = () => {
+        speechSynthesis.onvoiceschanged = null; // Remove listener
+        setVoiceAndSpeak();
+      };
+    } else {
+      // Voices already loaded
+      setVoiceAndSpeak();
+    }
   }, []);
+
+  const speakQuestion = useCallback((text) => {
+    if (!text || !('speechSynthesis' in window)) {
+      console.log('❌ Text-to-speech not supported or no text provided');
+      return;
+    }
+
+    // Prevent speaking the same question multiple times
+    if (text === lastSpokenQuestion && isSpeaking) {
+      console.log('🚫 Already speaking this question, skipping...');
+      return;
+    }
+
+    // Stop any current speech
+    if (speechSynthesis.speaking) {
+      speechSynthesis.cancel();
+      // Wait a bit for the cancellation to take effect
+      setTimeout(() => {
+        startSpeaking(text);
+      }, 100);
+    } else {
+      startSpeaking(text);
+    }
+  }, [lastSpokenQuestion, isSpeaking, startSpeaking]);
 
   // Auto-read question when it changes (only in voice mode)
   useEffect(() => {
-    if (shouldReadQuestion && questionText && !isSpeaking && !isListening) {
+    if (shouldReadQuestion && questionText && !isSpeaking && !isListening && questionText !== lastSpokenQuestion) {
       console.log('🔊 Auto-reading question in voice mode');
-      // Small delay to ensure UI is ready
-      setTimeout(() => {
-        speakQuestion(questionText);
-      }, 1000);
+      // Small delay to ensure UI is ready and prevent rapid re-triggers
+      const timeoutId = setTimeout(() => {
+        // Double-check conditions before speaking
+        if (shouldReadQuestion && questionText && !isSpeaking && !isListening && questionText !== lastSpokenQuestion) {
+          speakQuestion(questionText);
+        }
+      }, 1500);
+      
+      // Cleanup timeout if component unmounts or dependencies change
+      return () => clearTimeout(timeoutId);
     }
-  }, [shouldReadQuestion, questionText, speakQuestion, isSpeaking, isListening]);
+  }, [shouldReadQuestion, questionText, speakQuestion, isSpeaking, isListening, lastSpokenQuestion]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -212,11 +256,11 @@ const VoiceInput = ({ onTranscript, disabled, shouldReadQuestion, questionText }
               console.log(`🔄 Retrying speech recognition... (${retryCount + 1}/${maxRetries})`);
               setTimeout(() => {
                 // Check if we should still retry (user might have stopped manually)
-                if (isListening && !isOffline && navigator.onLine) {
+                if (isListening && !isOffline && navigator.onLine && recognitionRef.current) {
                   setRetryCount(prev => prev + 1);
                   try {
                     console.log('🎤 Attempting to restart speech recognition...');
-                    recognitionInstance.start();
+                    recognitionRef.current.start();
                   } catch (e) {
                     console.error('❌ Retry failed:', e);
                     setIsListening(false);
@@ -323,7 +367,8 @@ const VoiceInput = ({ onTranscript, disabled, shouldReadQuestion, questionText }
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);  // Intentionally minimal dependencies
+    // Dependencies intentionally limited to avoid unnecessary re-registration of event listeners
+  }, []);
 
   const toggleListening = async () => {
     if (!recognition) {
@@ -355,7 +400,7 @@ const VoiceInput = ({ onTranscript, disabled, shouldReadQuestion, questionText }
         // Additional network test - try to reach Google's servers
         console.log('🌐 Testing internet connectivity to speech service...');
         try {
-          const response = await fetch('https://www.google.com/favicon.ico', { 
+          await fetch('https://www.google.com/favicon.ico', { 
             method: 'HEAD', 
             mode: 'no-cors',
             cache: 'no-cache'
@@ -367,7 +412,7 @@ const VoiceInput = ({ onTranscript, disabled, shouldReadQuestion, questionText }
         }
 
         // Prevent multiple simultaneous starts
-        if (recognition.started) {
+        if (recognitionRef.current && recognitionRef.current.started) {
           console.log('🚫 Recognition already started, ignoring request');
           return;
         }

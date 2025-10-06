@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 // Create axios instance
 const api = axios.create({
@@ -41,6 +41,18 @@ export const authAPI = {
   
   getProfile: () => 
     api.get('/auth/profile'),
+  
+  verifyEmail: (token) => 
+    api.get(`/auth/verify-email?token=${token}`),
+  
+  resendVerification: () => 
+    api.post('/auth/resend-verification'),
+  
+  forgotPassword: (email) => 
+    api.post('/auth/forgot-password', { email }),
+  
+  resetPassword: (token, newPassword) => 
+    api.post('/auth/reset-password', { token, newPassword }),
 };
 
 export default api;

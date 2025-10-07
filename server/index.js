@@ -20,21 +20,42 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.get('/', (req, res) => {
-  res.send('AI Mock Interview Platform API');
+  console.log('🏠 Root endpoint accessed from:', req.ip);
+  res.json({
+    message: 'AI Mock Interview Platform API',
+    status: 'running',
+    timestamp: new Date().toISOString(),
+    port: process.env.PORT || 5000,
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
+  console.log('🏥 Health check requested from:', req.ip, req.get('User-Agent'));
   res.status(200).json({ 
     status: 'OK', 
     message: 'Server is healthy',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    port: process.env.PORT || 5000
   });
 });
 
 app.use('/api/auth', authRoutes);
 app.use('/api/interview', interviewRoutes);
 // app.use('/api/admin', adminRoutes);
+
+// Catch-all route for debugging
+app.get('*', (req, res) => {
+  if (req.path !== '/' && req.path !== '/health') {
+    console.log('🔍 Unknown route accessed:', req.path, 'from:', req.ip);
+    res.status(404).json({ 
+      error: 'Route not found', 
+      path: req.path,
+      availableRoutes: ['/', '/health', '/api/auth/*', '/api/interview/*']
+    });
+  }
+});
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)

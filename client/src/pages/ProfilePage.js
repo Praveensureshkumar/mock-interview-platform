@@ -37,36 +37,32 @@ const ProfilePage = () => {
     improvementSuggestions: []
   });
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-    loadInterviewHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, navigate]);
-
-  // Handle browser back button to go to home page
-  useEffect(() => {
-    const handlePopState = (event) => {
-      event.preventDefault();
-      navigate('/', { replace: true });
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [navigate]);
-
   const loadInterviewHistory = useCallback(async () => {
     try {
       setLoading(true);
       console.log('Loading interview history...');
+      
+      // Check if there's a pending interview completion
+      const interviewCompleted = localStorage.getItem('interviewCompleted');
+      if (interviewCompleted) {
+        console.log('Found pending interview completion, ensuring fresh data...');
+        localStorage.removeItem('interviewCompleted');
+      }
+      
       const response = await interviewAPI.getUserResults();
-      console.log('Interview history response:', response.data);
+      console.log('Raw API response:', response);
+      console.log('Interview history response data:', response.data);
+      
+      if (!response.data || !response.data.results) {
+        console.error('No results found in response:', response.data);
+        setInterviewHistory([]);
+        calculateStats([]);
+        return;
+      }
+      
       let history = response.data.results;
+      console.log('Raw interview history:', history);
+      console.log('Number of interviews found:', history.length);
       
       // Sort by completedAt date (newest first) and add interview numbers
       history = history.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
@@ -84,16 +80,89 @@ const ProfilePage = () => {
         date: h.completedAt,
         correctAnswers: h.correctAnswers,
         totalQuestions: h.totalQuestions,
-        interviewNumber: h.interviewNumber
+        interviewNumber: h.interviewNumber,
+        testType: h.testType
       })));
       setInterviewHistory(history);
       calculateStats(history);
     } catch (error) {
       console.error('Failed to load interview history:', error);
+      console.error('Error details:', error.response?.data);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    loadInterviewHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, navigate]);
+
+  // Auto-refresh when page becomes visible (after completing interview)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        // Refresh data when page becomes visible
+        loadInterviewHistory();
+      }
+    };
+
+    const handleFocus = () => {
+      if (user) {
+        // Refresh data when window gets focus
+        loadInterviewHistory();
+      }
+    };
+
+    const handleStorageChange = (event) => {
+      if (event.key === 'interviewCompleted' && user) {
+        // Refresh data when an interview is completed
+        console.log('Interview completed detected, refreshing profile...');
+        loadInterviewHistory();
+        // Clear the flag
+        localStorage.removeItem('interviewCompleted');
+      }
+    };
+
+    // Refresh data every time component mounts or user navigates to profile
+    const refreshOnMount = () => {
+      if (user) {
+        loadInterviewHistory();
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Refresh immediately
+    refreshOnMount();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [loadInterviewHistory, user]);
+
+  // Handle browser back button to go to home page
+  useEffect(() => {
+    const handlePopState = (event) => {
+      event.preventDefault();
+      navigate('/', { replace: true });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate]);
 
   const calculateStats = (history) => {
     if (history.length === 0) {
@@ -171,7 +240,7 @@ const ProfilePage = () => {
       
       // Call API to delete user profile
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/profile', {
+      const response = await fetch('http://localhost:5001/api/auth/profile', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

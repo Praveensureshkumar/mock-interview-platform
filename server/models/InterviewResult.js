@@ -9,7 +9,7 @@ const interviewResultSchema = new mongoose.Schema({
   testType: {
     type: String,
     required: true,
-    enum: ['fullstack', 'frontend', 'backend', 'hr']
+    enum: ['fullstack', 'frontend', 'backend', 'python', 'javascript', 'sql', 'react', 'nodejs', 'hr']
   },
   difficulty: {
     type: String,

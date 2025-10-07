@@ -65,6 +65,13 @@ router.post('/results', optionalAuth, async (req, res) => {
   try {
     const { testType, difficulty, mode, questions, answers, score, completedAt } = req.body;
 
+    console.log(`💾 Saving interview result:`);
+    console.log(`   User ID: ${req.user ? req.user._id : 'null (guest)'}`);
+    console.log(`   Test Type: ${testType}`);
+    console.log(`   Difficulty: ${difficulty}`);
+    console.log(`   Mode: ${mode}`);
+    console.log(`   Score: ${score}`);
+
     const interviewResult = new InterviewResult({
       userId: req.user ? req.user._id : null, // Save user ID if authenticated
       testType,
@@ -77,6 +84,7 @@ router.post('/results', optionalAuth, async (req, res) => {
     });
 
     await interviewResult.save();
+    console.log(`✅ Interview result saved successfully with ID: ${interviewResult._id}`);
 
     res.status(201).json({
       success: true,
@@ -85,7 +93,7 @@ router.post('/results', optionalAuth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Save result error:', error);
+    console.error('💥 Save result error:', error);
     res.status(500).json({ message: 'Server error while saving result' });
   }
 });
@@ -124,9 +132,14 @@ router.post('/analyze-answer', async (req, res) => {
 // @access  Private
 router.get('/user-results', auth, async (req, res) => {
   try {
+    console.log(`🔍 Fetching results for user: ${req.user._id}`);
+    
     const results = await InterviewResult.find({ userId: req.user._id })
       .populate('questions', 'question category')
       .sort({ completedAt: -1 });
+
+    console.log(`📊 Found ${results.length} results for user ${req.user._id}`);
+    console.log(`📋 Test types found: ${results.map(r => r.testType).join(', ')}`);
 
     res.json({ results });
 

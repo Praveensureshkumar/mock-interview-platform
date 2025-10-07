@@ -60,11 +60,12 @@ export const AuthProvider = ({ children }) => {
         password
       });
       
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
-      return { success: true };
+      // New flow: Don't auto-login, just return success message
+      return { 
+        success: true, 
+        message: response.data.message,
+        requiresVerification: response.data.requiresVerification
+      };
     } catch (error) {
       return { 
         success: false, 

@@ -64,11 +64,12 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    // Create new user
+    // Create new user (but not verified yet)
     const user = new User({
       name: name.trim(),
       email: email.toLowerCase().trim(),
-      password
+      password,
+      isEmailVerified: false // Explicitly set to false
     });
 
     // Generate email verification token
@@ -78,21 +79,12 @@ router.post('/signup', async (req, res) => {
     // Send verification email
     const emailResult = await emailService.sendVerificationEmail(user.email, user.name, verificationToken);
     
-    // Generate token for immediate login (but mark as unverified)
-    const token = generateToken(user._id);
-
+    // DON'T generate login token - user must verify email first
     res.status(201).json({
       success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        profilePicture: user.profilePicture,
-        isEmailVerified: user.isEmailVerified
-      },
-      message: 'Account created successfully! Please check your email to verify your account.',
-      emailSent: emailResult.success
+      message: 'Account created successfully! Please check your email and click the verification link to activate your account.',
+      emailSent: emailResult.success,
+      requiresVerification: true
     });
 
   } catch (error) {
@@ -118,6 +110,14 @@ router.post('/login', async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      return res.status(400).json({ 
+        message: 'Please verify your email address before logging in. Check your inbox for the verification link.',
+        requiresVerification: true
+      });
     }
 
     // Generate token

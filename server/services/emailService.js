@@ -11,14 +11,20 @@ class EmailService {
     
     switch (emailProvider) {
       case 'gmail':
-        // Free Gmail SMTP (100 emails/day)
-        this.transporter = nodemailer.createTransporter({
-          service: 'gmail',
+        // Gmail SMTP with App Password
+        this.transporter = nodemailer.createTransport({
+          host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+          port: process.env.EMAIL_PORT || 587,
+          secure: false, // true for 465, false for other ports
           auth: {
-            user: process.env.GMAIL_USER, // your-email@gmail.com
-            pass: process.env.GMAIL_APP_PASSWORD // App password (not regular password)
+            user: process.env.EMAIL_USER, // testsprojects2025@gmail.com
+            pass: process.env.EMAIL_PASS // Gmail App password
+          },
+          tls: {
+            rejectUnauthorized: false // Fix for self-signed certificate error
           }
         });
+        console.log('📧 Email Service: Gmail SMTP configured');
         break;
         
       case 'ethereal':
@@ -65,23 +71,51 @@ class EmailService {
       to: email,
       subject: 'Verify Your Email - Mock Interview Platform',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #3b82f6;">Welcome to Mock Interview Platform!</h2>
-          <p>Hi ${name},</p>
-          <p>Thank you for signing up! Please verify your email address to complete your registration.</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationUrl}" 
-               style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-              Verify Email Address
-            </a>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px;">
+          <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #3b82f6; margin: 0; font-size: 28px;">🎯 Mock Interview Platform</h1>
+              <p style="color: #6b7280; margin: 5px 0 0 0;">Ace Your Next Interview</p>
+            </div>
+            
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Welcome to the Platform! 🚀</h2>
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">Hi <strong>${name}</strong>,</p>
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+              Thank you for joining Mock Interview Platform! We're excited to help you prepare for your dream job interviews.
+            </p>
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+              Please verify your email address to unlock all features and start practicing:
+            </p>
+            
+            <div style="text-align: center; margin: 40px 0;">
+              <a href="${verificationUrl}" 
+                 style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);">
+                ✅ Verify Email Address
+              </a>
+            </div>
+            
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 30px 0;">
+              <p style="margin: 0; font-size: 14px; color: #6b7280;">
+                <strong>Can't click the button?</strong> Copy and paste this link in your browser:
+              </p>
+              <p style="word-break: break-all; color: #3b82f6; margin: 10px 0 0 0; font-size: 14px;">${verificationUrl}</p>
+            </div>
+            
+            <div style="border-top: 2px solid #e5e7eb; margin-top: 40px; padding-top: 20px;">
+              <p style="color: #9ca3af; font-size: 14px; margin: 0;">
+                ⏰ <strong>This link will expire in 24 hours</strong> for security reasons.
+              </p>
+              <p style="color: #9ca3af; font-size: 14px; margin: 10px 0 0 0;">
+                If you didn't create an account, please ignore this email.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                © 2025 Mock Interview Platform | Sent from testsprojects2025@gmail.com
+              </p>
+            </div>
           </div>
-          <p>Or copy and paste this link in your browser:</p>
-          <p style="word-break: break-all; color: #6b7280;">${verificationUrl}</p>
-          <p><strong>This link will expire in 24 hours.</strong></p>
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-          <p style="color: #6b7280; font-size: 14px;">
-            If you didn't create an account, please ignore this email.
-          </p>
         </div>
       `
     };
@@ -97,23 +131,57 @@ class EmailService {
       to: email,
       subject: 'Reset Your Password - Mock Interview Platform',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #dc2626;">Password Reset Request</h2>
-          <p>Hi ${name},</p>
-          <p>You requested to reset your password. Click the button below to create a new password:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" 
-               style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-              Reset Password
-            </a>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px;">
+          <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #dc2626; margin: 0; font-size: 28px;">🔒 Mock Interview Platform</h1>
+              <p style="color: #6b7280; margin: 5px 0 0 0;">Secure Password Reset</p>
+            </div>
+            
+            <h2 style="color: #1f2937; margin-bottom: 20px;">Password Reset Request 🔑</h2>
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">Hi <strong>${name}</strong>,</p>
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+              We received a request to reset your password for your Mock Interview Platform account.
+            </p>
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+              Click the button below to create a new secure password:
+            </p>
+            
+            <div style="text-align: center; margin: 40px 0;">
+              <a href="${resetUrl}" 
+                 style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);">
+                🔑 Reset Password
+              </a>
+            </div>
+            
+            <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 20px; border-radius: 8px; margin: 30px 0;">
+              <p style="margin: 0; font-size: 14px; color: #7f1d1d;">
+                <strong>⚠️ Security Notice:</strong> This link will expire in <strong>10 minutes</strong> for your protection.
+              </p>
+            </div>
+            
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 30px 0;">
+              <p style="margin: 0; font-size: 14px; color: #6b7280;">
+                <strong>Can't click the button?</strong> Copy and paste this link in your browser:
+              </p>
+              <p style="word-break: break-all; color: #dc2626; margin: 10px 0 0 0; font-size: 14px;">${resetUrl}</p>
+            </div>
+            
+            <div style="border-top: 2px solid #e5e7eb; margin-top: 40px; padding-top: 20px;">
+              <p style="color: #9ca3af; font-size: 14px; margin: 0;">
+                🛡️ If you didn't request this password reset, please ignore this email and your password will remain unchanged.
+              </p>
+              <p style="color: #9ca3af; font-size: 14px; margin: 10px 0 0 0;">
+                For security questions, contact us immediately.
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 12px; margin: 0;">
+                © 2025 Mock Interview Platform | Sent from testsprojects2025@gmail.com
+              </p>
+            </div>
           </div>
-          <p>Or copy and paste this link in your browser:</p>
-          <p style="word-break: break-all; color: #6b7280;">${resetUrl}</p>
-          <p><strong>This link will expire in 10 minutes for security.</strong></p>
-          <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-          <p style="color: #6b7280; font-size: 14px;">
-            If you didn't request this password reset, please ignore this email.
-          </p>
         </div>
       `
     };

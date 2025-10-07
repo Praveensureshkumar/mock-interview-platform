@@ -136,6 +136,9 @@ const InterviewPage = () => {
     if (user) {
       try {
         await interviewAPI.saveResult(interviewResult);
+        // Trigger profile refresh by setting a flag in localStorage
+        localStorage.setItem('interviewCompleted', Date.now().toString());
+        console.log('Interview results saved successfully');
       } catch (error) {
         console.error('Failed to save results:', error);
       }

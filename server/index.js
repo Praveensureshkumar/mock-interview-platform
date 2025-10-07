@@ -21,16 +21,17 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.get('/', (req, res) => {
   console.log('🏠 Root endpoint accessed from:', req.ip);
-  res.json({
+  res.status(200).json({
     message: 'AI Mock Interview Platform API',
-    status: 'running',
+    status: 'OK',
+    healthy: true,
     timestamp: new Date().toISOString(),
     port: process.env.PORT || 5000,
     environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// Health check endpoint for Render
+// Health check endpoint for Render (backup)
 app.get('/health', (req, res) => {
   console.log('🏥 Health check requested from:', req.ip, req.get('User-Agent'));
   res.status(200).json({ 
@@ -39,6 +40,12 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     port: process.env.PORT || 5000
   });
+});
+
+// Simple text health check (alternative)
+app.get('/healthz', (req, res) => {
+  console.log('💊 Simple health check from:', req.ip);
+  res.status(200).send('OK');
 });
 
 app.use('/api/auth', authRoutes);

@@ -45,18 +45,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/interview', interviewRoutes);
 // app.use('/api/admin', adminRoutes);
 
-// Catch-all route for debugging
-app.get('*', (req, res) => {
-  if (req.path !== '/' && req.path !== '/health') {
-    console.log('🔍 Unknown route accessed:', req.path, 'from:', req.ip);
-    res.status(404).json({ 
-      error: 'Route not found', 
-      path: req.path,
-      availableRoutes: ['/', '/health', '/api/auth/*', '/api/interview/*']
-    });
-  }
-});
-
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))

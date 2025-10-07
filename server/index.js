@@ -23,6 +23,15 @@ app.get('/', (req, res) => {
   res.send('AI Mock Interview Platform API');
 });
 
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'Server is healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/interview', interviewRoutes);
 // app.use('/api/admin', adminRoutes);

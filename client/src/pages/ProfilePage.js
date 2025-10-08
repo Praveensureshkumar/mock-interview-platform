@@ -240,7 +240,7 @@ const ProfilePage = () => {
       
       // Call API to delete user profile
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/auth/profile', {
+      const response = await fetch('https://mock-interview-platform-w6ic.onrender.com/api/auth/profile', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

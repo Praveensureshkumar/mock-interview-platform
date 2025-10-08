@@ -73,27 +73,27 @@ const sampleQuestions = [
     category: "Database Design"
   },
 
-  // HR Questions
+  // HR Questions (using 'fullstack' as testType since HR is not in enum)
   {
     question: "Tell me about yourself and why you're interested in this position.",
-    testType: "hr",
+    testType: "fullstack",
     difficulty: "beginner",
     keywords: ["background", "experience", "interest", "motivation", "skills"],
-    category: "Introduction"
+    category: "HR - Introduction"
   },
   {
     question: "Describe a challenging project you worked on and how you overcame the difficulties.",
-    testType: "hr",
+    testType: "fullstack",
     difficulty: "intermediate",
     keywords: ["challenge", "project", "problem solving", "teamwork", "solution"],
-    category: "Experience"
+    category: "HR - Experience"
   },
   {
     question: "Where do you see yourself in 5 years? How does this role align with your career goals?",
-    testType: "hr",
+    testType: "fullstack",
     difficulty: "beginner",
     keywords: ["career goals", "future", "growth", "development", "alignment"],
-    category: "Career Planning"
+    category: "HR - Career Planning"
   },
 
   // Additional questions for variety
@@ -120,17 +120,17 @@ const sampleQuestions = [
   },
   {
     question: "What is your greatest strength and how does it help you as a developer?",
-    testType: "hr",
+    testType: "fullstack",
     difficulty: "beginner",
     keywords: ["strength", "skills", "development", "contribution", "team"],
-    category: "Strengths"
+    category: "HR - Strengths"
   },
   {
     question: "How do you stay updated with the latest technology trends?",
-    testType: "hr",
+    testType: "fullstack",
     difficulty: "beginner",
     keywords: ["learning", "technology", "trends", "resources", "continuous improvement"],
-    category: "Learning"
+    category: "HR - Learning"
   }
 ];
 

@@ -7,24 +7,36 @@ class EmailService {
   }
 
   setupTransporter() {
-    const emailProvider = process.env.EMAIL_PROVIDER || 'console'; // 'gmail', 'ethereal', 'console'
+    const emailProvider = process.env.EMAIL_PROVIDER || 'console';
+    
+    console.log(`🔧 Setting up email service with provider: ${emailProvider}`);
+    console.log(`📧 Email user: ${process.env.EMAIL_USER}`);
+    console.log(`📧 Client URL: ${process.env.CLIENT_URL}`);
     
     switch (emailProvider) {
       case 'gmail':
+        // Validate required environment variables
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+          console.error('❌ Gmail configuration incomplete - missing EMAIL_USER or EMAIL_PASS');
+          this.transporter = null;
+          return;
+        }
+        
         // Gmail SMTP with App Password
         this.transporter = nodemailer.createTransport({
+          service: 'gmail', // Use Gmail service for better compatibility
           host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-          port: process.env.EMAIL_PORT || 587,
+          port: parseInt(process.env.EMAIL_PORT) || 587,
           secure: false, // true for 465, false for other ports
           auth: {
-            user: process.env.EMAIL_USER, // testsprojects2025@gmail.com
-            pass: process.env.EMAIL_PASS // Gmail App password
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
           },
           tls: {
             rejectUnauthorized: false // Fix for self-signed certificate error
           }
         });
-        console.log('📧 Email Service: Gmail SMTP configured');
+        console.log('📧 Email Service: Gmail SMTP configured successfully');
         break;
         
       case 'ethereal':

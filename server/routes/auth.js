@@ -387,3 +387,45 @@ router.delete('/profile', auth, async (req, res) => {
 });
 
 module.exports = router;
+
+// TEST EMAIL ENDPOINT (Remove after debugging)
+router.get('/test-email-config', async (req, res) => {
+  try {
+    console.log('🧪 Testing email configuration...');
+    
+    const config = {
+      EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || 'NOT SET',
+      EMAIL_USER: process.env.EMAIL_USER || 'NOT SET',
+      EMAIL_PASS: process.env.EMAIL_PASS ? 'SET' : 'NOT SET',
+      CLIENT_URL: process.env.CLIENT_URL || 'NOT SET',
+      NODE_ENV: process.env.NODE_ENV || 'NOT SET'
+    };
+    
+    console.log('📋 Environment config:', config);
+    
+    // Test email service
+    const emailResult = await emailService.sendVerificationEmail(
+      'test@example.com', 
+      'Test User', 
+      'test-token-123'
+    );
+    
+    res.json({
+      success: true,
+      message: 'Email configuration test completed',
+      environment: config,
+      emailTest: emailResult
+    });
+    
+  } catch (error) {
+    console.error('❌ Email config test failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      environment: {
+        EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || 'NOT SET',
+        CLIENT_URL: process.env.CLIENT_URL || 'NOT SET'
+      }
+    });
+  }
+});

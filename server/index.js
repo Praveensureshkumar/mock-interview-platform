@@ -11,8 +11,19 @@ const interviewRoutes = require('./routes/interview');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Middleware - Configure CORS to allow your Vercel frontend
+const corsOptions = {
+  origin: [
+    'http://localhost:3000', // Local development
+    'https://aipowered-interview.vercel.app', // Your Vercel deployment
+    'https://mock-interview-platform-w6ic.onrender.com' // Your Render deployment
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Serve static files for uploads

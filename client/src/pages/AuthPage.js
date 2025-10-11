@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
+import SuccessModal from '../components/SuccessModal';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,8 +14,9 @@ const AuthPage = () => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successData, setSuccessData] = useState({ title: '', message: '' });
 
   const { login, signup } = useAuth();
   const navigate = useNavigate();
@@ -51,18 +53,17 @@ const AuthPage = () => {
         
         const result = await signup(formData.name, formData.email, formData.password);
         if (result.success) {
-          setSuccessMessage(result.message);
+          // Show success popup modal
+          setSuccessData({
+            title: 'Account Created Successfully!',
+            message: 'Please check your email and click the verification link to activate your account. You can then sign in to access all features.'
+          });
+          setShowSuccessModal(true);
           setError('');
           // Clear form after successful signup
           setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-          // Optionally switch to login mode after a delay
-          setTimeout(() => {
-            setIsLogin(true);
-            setSuccessMessage('');
-          }, 5000);
         } else {
           setError(result.error);
-          setSuccessMessage('');
         }
       }
     } catch (err) {
@@ -84,7 +85,7 @@ const AuthPage = () => {
             onClick={() => {
               setIsLogin(!isLogin);
               setError('');
-              setSuccessMessage('');
+              setShowSuccessModal(false);
               setFormData({ name: '', email: '', password: '', confirmPassword: '' });
             }}
             className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
@@ -205,26 +206,6 @@ const AuthPage = () => {
               </div>
             )}
 
-            {successMessage && (
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-green-700 dark:text-green-400">
-                      {successMessage}
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                      Switching to login in 5 seconds...
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div>
               <button
                 type="submit"
@@ -258,6 +239,25 @@ const AuthPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title={successData.title}
+        message={successData.message}
+      >
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+          <p className="text-sm text-blue-700 dark:text-blue-400">
+            💡 <strong>Next Steps:</strong>
+          </p>
+          <ul className="text-xs text-blue-600 dark:text-blue-500 mt-1 ml-4 list-disc">
+            <li>Check your email inbox (including spam folder)</li>
+            <li>Click the verification link in the email</li>
+            <li>Return here to sign in once verified</li>
+          </ul>
+        </div>
+      </SuccessModal>
     </div>
   );
 };

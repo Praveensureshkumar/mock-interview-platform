@@ -17,6 +17,7 @@ const InterviewPage = () => {
   const [loading, setLoading] = useState(true);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState(null);
+  const [returnedFromProfile, setReturnedFromProfile] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Parse URL parameters
@@ -32,12 +33,26 @@ const InterviewPage = () => {
       navigate('/');
       return;
     }
+
+    // Check if returning from profile after completing interview
+    const sessionData = sessionStorage.getItem(`interview_${testType}_${difficulty}`);
+    if (sessionData) {
+      const data = JSON.parse(sessionData);
+      if (data.completed) {
+        setIsCompleted(true);
+        setReturnedFromProfile(true);
+        setResults(data.results);
+        setLoading(false);
+        return;
+      }
+    }
   }, [testType, difficulty, navigate]);
 
   // Handle browser back button
   useEffect(() => {
     const handlePopState = (event) => {
       event.preventDefault();
+      // Always redirect to home when using browser back button
       navigate('/', { replace: true });
     };
 
@@ -144,14 +159,23 @@ const InterviewPage = () => {
       }
     }
 
-    setResults({
+    const resultsData = {
       score,
       totalQuestions: questions.length,
       strengths: getStrengths(finalAnswers),
       weaknesses: getWeaknesses(finalAnswers),
       answers: finalAnswers
-    });
+    };
+
+    setResults(resultsData);
     setShowResults(true);
+
+    // Store session data so we can show proper options if user returns
+    sessionStorage.setItem(`interview_${testType}_${difficulty}`, JSON.stringify({
+      completed: true,
+      results: resultsData,
+      completedAt: new Date().toISOString()
+    }));
   };
 
   const calculateScore = (answers) => {
@@ -252,6 +276,59 @@ const InterviewPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Special view for completed interviews accessed via back button */}
+      {returnedFromProfile && isCompleted && (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 text-center shadow-lg">
+            <div className="mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 mb-4">
+                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Interview Completed</h2>
+              <p className="text-gray-600 dark:text-gray-400">You have already completed this interview.</p>
+            </div>
+            
+            {results && (
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-1">{results.score}%</div>
+                <div className="text-sm text-blue-700 dark:text-blue-300">Your Score</div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/profile')}
+                disabled={!user}
+                className="w-full py-3 px-4 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                {user ? 'Go to Profile' : 'Login to View Results'}
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="w-full py-3 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+              >
+                Back to Home
+              </button>
+              <button
+                onClick={() => {
+                  // Clear session data and restart interview
+                  sessionStorage.removeItem(`interview_${testType}_${difficulty}`);
+                  window.location.reload();
+                }}
+                className="w-full py-2 px-4 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                Take Interview Again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Normal interview view */}
+      {!returnedFromProfile && (
+        <>
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-4 py-4">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -437,6 +514,8 @@ const InterviewPage = () => {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'https://mock-interview-platform-w6ic.onrender.com/api';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
 
   useEffect(() => {
     const token = localStorage.getItem('token');

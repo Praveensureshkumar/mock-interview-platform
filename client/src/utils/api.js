@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use live backend for testing - can be switched back later
-const API_URL = process.env.REACT_APP_API_URL || 'https://mock-interview-platform-w6ic.onrender.com/api';
+// Use local backend for development
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5002/api';
 
 // Create axios instance
 const api = axios.create({

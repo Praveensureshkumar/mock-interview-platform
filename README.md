@@ -301,10 +301,9 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 👨‍� About the Developer
 
 **Praveen Suresh Kumar**
-- 🌐 **Portfolio**: [Your Portfolio Link]
-- 💼 **LinkedIn**: [Your LinkedIn Profile]
-- 📧 **Email**: praveensureshkumar@example.com
-- 🐙 **GitHub**: [@Praveensureshkumar](https://github.com/Praveensureshkumar)
+- 💼 **LinkedIn**: https://www.linkedin.com/in/praveensureshkumar/
+- 📧 **Email**: praveensuresh2024@example.com
+- 🐙 **GitHub**: https://github.com/Praveensureshkumar
 
 ## 🙏 Acknowledgments
 

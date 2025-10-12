@@ -32,8 +32,6 @@ const EmailVerificationPage = () => {
         setVerified(true);
         setUserInfo(response.data.user);
         
-        console.log('Verification response:', response.data); // Debug log
-        
         // Auto-login after successful verification
         if (response.data.token) {
           localStorage.setItem('token', response.data.token);
@@ -44,11 +42,9 @@ const EmailVerificationPage = () => {
           setUser(decoded);
           
           setAutoLoginSuccess(true);
-          console.log('Auto-login successful'); // Debug log
         } else {
           // If no token, still show success but without auto-login
           setAutoLoginSuccess(false);
-          console.log('No token received, auto-login failed'); // Debug log
         }
       } catch (err) {
         setError(err.response?.data?.message || 'Verification failed');

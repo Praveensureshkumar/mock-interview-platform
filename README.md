@@ -87,7 +87,7 @@ Create environment files based on the examples:
 MONGO_URI=mongodb://localhost:27017/mockInterviewDB
 
 # Server Configuration
-PORT=5001
+PORT=5000
 NODE_ENV=development
 
 # JWT Authentication
@@ -110,7 +110,7 @@ BCRYPT_ROUNDS=12
 
 **Client Environment** (`client/.env`):
 ```env
-REACT_APP_API_URL=http://localhost:5001
+REACT_APP_API_URL=http://localhost:5000
 REACT_APP_APP_NAME=Mock Interview Platform
 ```
 
@@ -137,7 +137,7 @@ npm start
 
 🎉 **Application URLs:**
 - **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5001
+- **Backend API**: http://localhost:5000
 - **Email Console**: Check terminal for email verification links
 
 ## 📁 Project Architecture
@@ -223,7 +223,7 @@ npm test            # Run test suite
 ### **Email System Testing**
 ```bash
 # Test email verification flow
-curl -X POST http://localhost:5001/api/auth/register \
+curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"name":"Test User","email":"test@example.com","password":"Test123!"}'
 
@@ -301,10 +301,9 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## 👨‍� About the Developer
 
 **Praveen Suresh Kumar**
-- 🌐 **Portfolio**: [Your Portfolio Link]
-- 💼 **LinkedIn**: [Your LinkedIn Profile]
-- 📧 **Email**: praveensureshkumar@example.com
-- 🐙 **GitHub**: [@Praveensureshkumar](https://github.com/Praveensureshkumar)
+- 💼 **LinkedIn**: https://www.linkedin.com/in/praveensureshkumar/
+- 📧 **Email**: praveensuresh2024@example.com
+- 🐙 **GitHub**: https://github.com/Praveensureshkumar
 
 ## 🙏 Acknowledgments
 

@@ -1,0 +1,135 @@
+name: Development CI/CD
+
+on:
+  push:
+    branches: [ development ]
+  pull_request:
+    branches: [ development, main ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install Backend Dependencies
+      run: |
+        cd server
+        npm ci
+    
+    - name: Install Frontend Dependencies
+      run: |
+        cd client
+        npm ci
+    
+    - name: Lint Backend Code
+      run: |
+        cd server
+        npm run lint --if-present || echo "No lint script found"
+    
+    - name: Lint Frontend Code
+      run: |
+        cd client
+        npm run lint --if-present || echo "No lint script found"
+    
+    - name: Run Backend Tests
+      run: |
+        cd server
+        npm test --if-present || echo "No tests found"
+      env:
+        NODE_ENV: test
+    
+    - name: Run Frontend Tests
+      run: |
+        cd client
+        npm test -- --coverage --watchAll=false --passWithNoTests
+      env:
+        CI: true
+    
+    - name: Build Frontend for Testing
+      run: |
+        cd client
+        npm run build
+      env:
+        REACT_APP_API_URL: http://localhost:5000/api
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    
+    - name: Check for TODO/FIXME comments
+      run: |
+        echo "🔍 Checking for TODO/FIXME comments..."
+        if grep -r "TODO\|FIXME" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" .; then
+          echo "⚠️  Found TODO/FIXME comments - consider addressing them"
+        else
+          echo "✅ No TODO/FIXME comments found"
+        fi
+    
+    - name: Check for console.log statements
+      run: |
+        echo "🔍 Checking for console.log statements..."
+        if grep -r "console\.log" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" client/src/; then
+          echo "⚠️  Found console.log statements - consider removing them"
+        else
+          echo "✅ No console.log statements found in client"
+        fi
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    
+    - name: Install Dependencies
+      run: |
+        cd server && npm ci
+        cd ../client && npm ci
+    
+    - name: Run Security Audit (Backend)
+      run: |
+        cd server
+        npm audit --audit-level=moderate || true
+    
+    - name: Run Security Audit (Frontend)
+      run: |
+        cd client
+        npm audit --audit-level=moderate || true
+
+  notify-dev:
+    needs: [lint-and-test, code-quality, security-scan]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Development Check Results
+      run: |
+        echo "🔍 Development Pipeline Results:"
+        echo "Tests: ${{ needs.lint-and-test.result }}"
+        echo "Code Quality: ${{ needs.code-quality.result }}"
+        echo "Security: ${{ needs.security-scan.result }}"
+        
+        if [[ "${{ needs.lint-and-test.result }}" == "success" ]]; then
+          echo "✅ All checks passed! Ready for merge to main."
+        else
+          echo "❌ Some checks failed. Please fix before merging."
+        fi

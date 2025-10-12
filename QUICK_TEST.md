@@ -1,6 +1,6 @@
 # 🧪 **QUICK TEST: Email Features (Using API Calls)**
 
-## 🚀 **Server Status**: ✅ Running on http://localhost:5001
+## 🚀 **Server Status**: ✅ Running on http://localhost:5000
 
 Since your ports are busy, here's how to test the email features using API calls:
 
@@ -10,7 +10,7 @@ Since your ports are busy, here's how to test the email features using API calls
 
 1. **Sign Up User** (POST):
 ```bash
-URL: http://localhost:5001/api/auth/signup
+URL: http://localhost:5000/api/auth/signup
 Method: POST
 Content-Type: application/json
 
@@ -34,7 +34,7 @@ Body:
 
 3. **Verify Email** (GET):
 ```bash
-URL: http://localhost:5001/api/auth/verify-email?token=PASTE_TOKEN_HERE
+URL: http://localhost:5000/api/auth/verify-email?token=PASTE_TOKEN_HERE
 Method: GET
 ```
 
@@ -42,7 +42,7 @@ Method: GET
 
 1. **Request Password Reset** (POST):
 ```bash
-URL: http://localhost:5001/api/auth/forgot-password
+URL: http://localhost:5000/api/auth/forgot-password
 Method: POST
 Content-Type: application/json
 
@@ -56,7 +56,7 @@ Body:
 
 3. **Reset Password** (POST):
 ```bash
-URL: http://localhost:5001/api/auth/reset-password
+URL: http://localhost:5000/api/auth/reset-password
 Method: POST
 Content-Type: application/json
 
@@ -71,34 +71,34 @@ Body:
 
 ```bash
 # 1. Sign Up
-curl -X POST http://localhost:5001/api/auth/signup \
+curl -X POST http://localhost:5000/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"name":"Test User","email":"test@example.com","password":"123456"}'
 
 # 2. Check console output, then verify email
-curl "http://localhost:5001/api/auth/verify-email?token=YOUR_TOKEN_HERE"
+curl "http://localhost:5000/api/auth/verify-email?token=YOUR_TOKEN_HERE"
 
 # 3. Test forgot password
-curl -X POST http://localhost:5001/api/auth/forgot-password \
+curl -X POST http://localhost:5000/api/auth/forgot-password \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com"}'
 
 # 4. Check console output, then reset password
-curl -X POST http://localhost:5001/api/auth/reset-password \
+curl -X POST http://localhost:5000/api/auth/reset-password \
   -H "Content-Type: application/json" \
   -d '{"token":"YOUR_RESET_TOKEN","newPassword":"newpassword123"}'
 ```
 
 ## **Method 3: Browser Testing**
 
-1. **Open**: http://localhost:5001/api/auth/signup (will show error but that's OK)
+1. **Open**: http://localhost:5000/api/auth/signup (will show error but that's OK)
 2. **Use browser's developer tools**:
    - Open F12 → Console
    - Run JavaScript:
 
 ```javascript
 // Sign up
-fetch('http://localhost:5001/api/auth/signup', {
+fetch('http://localhost:5000/api/auth/signup', {
   method: 'POST',
   headers: {'Content-Type': 'application/json'},
   body: JSON.stringify({
@@ -171,7 +171,7 @@ mongod
 
 ## ✅ **Success Checklist**
 
-- [ ] Server running on port 5001 ✅
+- [ ] Server running on port 5000 ✅
 - [ ] Signup API returns success
 - [ ] Email URL appears in console  
 - [ ] Token verification works

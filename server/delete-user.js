@@ -39,6 +39,35 @@ async function deleteUser() {
   }
 }
 
+// Alternative: Delete ALL users (use with caution!)
+async function deleteAllUsers() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('📊 Connected to MongoDB');
+
+    // Count users first
+    const userCount = await User.countDocuments();
+    console.log(`⚠️  Found ${userCount} users in database`);
+    
+    if (userCount === 0) {
+      console.log('✅ Database is already empty');
+      return;
+    }
+
+    // Delete ALL users
+    const result = await User.deleteMany({});
+    console.log(`🗑️  Successfully deleted ${result.deletedCount} users`);
+    console.log('✅ All users have been removed from the database');
+
+  } catch (error) {
+    console.error('❌ Error deleting all users:', error.message);
+  } finally {
+    await mongoose.disconnect();
+    console.log('📊 Disconnected from MongoDB');
+    process.exit(0);
+  }
+}
+
 // Alternative: Delete all test users
 async function deleteAllTestUsers() {
   try {
@@ -96,6 +125,8 @@ if (command === 'list') {
   listAllUsers();
 } else if (command === 'delete-test') {
   deleteAllTestUsers();
+} else if (command === 'delete-all') {
+  deleteAllUsers();
 } else if (command && command.includes('@')) {
   deleteUser();
 } else {
@@ -105,6 +136,7 @@ if (command === 'list') {
   console.log('  node delete-user.js user@example.com     # Delete specific user');
   console.log('  node delete-user.js list                 # List all users');
   console.log('  node delete-user.js delete-test          # Delete all test users');
+  console.log('  node delete-user.js delete-all           # Delete ALL users (⚠️  CAUTION!)');
   console.log('\nExamples:');
   console.log('  node delete-user.js john@example.com');
   console.log('  node delete-user.js test@gmail.com');

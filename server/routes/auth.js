@@ -145,15 +145,15 @@ router.post('/login', async (req, res) => {
 // @access  Public
 router.get('/verify-email', async (req, res) => {
   try {
-    const { token } = req.query;
+    const { token: verificationToken } = req.query;
 
-    if (!token) {
+    if (!verificationToken) {
       return res.status(400).json({ message: 'Verification token is required' });
     }
 
     // Find user with this verification token
     const user = await User.findOne({
-      emailVerificationToken: token,
+      emailVerificationToken: verificationToken,
       emailVerificationExpires: { $gt: Date.now() }
     });
 
@@ -169,9 +169,19 @@ router.get('/verify-email', async (req, res) => {
     user.emailVerificationExpires = null;
     await user.save();
 
+    // Generate JWT token for auto-login
+    const authToken = generateToken(user._id);
+
     res.json({
       success: true,
-      message: 'Email verified successfully! You can now use all platform features.'
+      message: 'Email verified successfully! You can now use all platform features.',
+      token: authToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isEmailVerified: user.isEmailVerified
+      }
     });
 
   } catch (error) {

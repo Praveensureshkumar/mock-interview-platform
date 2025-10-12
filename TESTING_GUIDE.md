@@ -20,7 +20,7 @@ CLIENT_URL=http://localhost:3000
 ```bash
 cd server
 npm run dev
-# Server should start on port 5000 (or 5001 if 5000 is busy)
+# Server should start on port 5000 (or change port if 5000 is busy)
 ```
 
 ## 🖥️ **Step 2: Client Setup**
@@ -106,7 +106,7 @@ npm start
 ### Successful Signup:
 ```bash
 ✅ HuggingFaceService initialized
-Server running on port 5001
+Server running on port 5000
 
 ============================================================
 📧 [VERIFICATION] EMAIL (Console Mode - FREE)
@@ -146,7 +146,7 @@ Server running on port 5001
 
 3. **Server not starting**:
    - Check if port 5000 is busy
-   - Use different port: `PORT=5001 npm run dev`
+   - Use different port: `PORT=5002 npm run dev`
 
 4. **Email URLs not showing in console**:
    - Verify EMAIL_PROVIDER=console in .env

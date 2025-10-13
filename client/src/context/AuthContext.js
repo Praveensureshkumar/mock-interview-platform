@@ -12,6 +12,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Production backend URL (updated for deployment)
   const API_URL = process.env.REACT_APP_API_URL || 'https://mock-interview-platform-w6ic.onrender.com/api';
 
   useEffect(() => {

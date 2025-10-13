@@ -1,7 +1,7 @@
 
 import axios from 'axios';
 
-// Use production backend by default
+// Use production backend by default (fixed for deployment)
 const API_URL = process.env.REACT_APP_API_URL || 'https://mock-interview-platform-w6ic.onrender.com/api';
 
 // Create axios instance
